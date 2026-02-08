@@ -1,6 +1,8 @@
 from .QuestionBase import QuestionBase, Result
 from .utility import CProgramRunner, ExecutionError
 import random
+import string
+import time
 
 BAD_NUMBERS = [
     'eww',
@@ -10,17 +12,20 @@ BAD_NUMBERS = [
 ]
 
 class QuestionN1(QuestionBase):
-    questionName = 'Операции с числами в различных системах счисления'
+    questionName = 'Задание 1, Операции с числами в различных системах счисления'
 
     def __init__(self, *, seed, inputSize: int = None):
         super().__init__(seed=seed, inputSize=inputSize)
 
         random.seed(self.seed)
 
-        self.inputSize = inputSize if inputSize else random.randint(2, 4)
+        self.inputSize = inputSize if inputSize else random.randint(3, 5)
 
-        self.inputBase = random.choice([2, 8, 10, 16])
+        #self.inputBase = random.choice([2, 8, 10, 16])
+        # Suddenly sadly, printf does not contain a binary conversion
+        self.inputBase = random.choice([8, 10, 16])
         self.outputBase = random.choice([x for x in [2, 8, 10, 16] if x != self.inputBase])
+        #self.outputBase = random.choice([x for x in [8, 10, 16] if x != self.inputBase])
         self.inputFormat = random.choice(['spaces', 'brackets', 'delimiter', 'squares'])
         self.delimiter = random.choice([';', ',', '|'])
         self.outputFormat = random.choice(['plain', 'brackets', 'prefix', 'labelled'])
@@ -92,15 +97,23 @@ class QuestionN1(QuestionBase):
         expectedOutput = self.toOutput(self.operate(numbers))
         return programInput, expectedOutput, numbers
 
-    def generateBadTest(self) -> tuple[str, str]:
+    def generateBadTest(self, random_bad_numbers: bool = False) -> tuple[str, str]:
         validCount = random.randint(0, self.inputSize - 1)
         valid = [self.toInput(random.randint(1, 100)) for _ in range(validCount)]
-        invalid = [random.choice(BAD_NUMBERS) for _ in range(self.inputSize - validCount)]
+        if random_bad_numbers:
+            invalid = ["".join(random.choices(string.ascii_lowercase, k=random.randint(2, 5))) for _ in range(self.inputSize - validCount)]
+        else:
+            invalid = [random.choice(BAD_NUMBERS) for _ in range(self.inputSize - validCount)]
         all_inputs = valid + invalid
         random.shuffle(all_inputs)
 
         programInput = self.formatInput(all_inputs)
-        expectedOutput = f'error: {validCount}'
+        for i in range(self.inputSize):
+            if all_inputs[i] in invalid:
+                break
+        else:
+            i = 0
+        expectedOutput = f'error: {i}'
         return programInput, expectedOutput
 
     @property
@@ -136,17 +149,25 @@ class QuestionN1(QuestionBase):
         random.seed(self.seed + 1)
         badTest = self.generateBadTest()
 
+        # Формируем таблицу с примером
         exampleTable = f'''
-            <table border>
-                <tr>
-                    <th>Входные данные</th><th>Результат</th>
-                </tr>
-                <tr>
-                    <td>{goodTest[0]}</td><td>{goodTest[1]}</td>
-                </tr>
-                <tr>
-                    <td>{badTest[0]}</td><td>{badTest[1]}</td>
-                </tr>
+            <table class="coderunnerexamples">
+                <thead>
+                    <tr>
+                        <th class="header c0" style="" scope="col">Входные данные</th>
+                        <th class="header c2 lastcol" style="" scope="col">Результат</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="r0 lastrow">
+                            <td class="cell  c1" style=""><pre class="tablecell">{goodTest[0]}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{goodTest[1]}</pre></td>
+                    </tr>
+                    <tr class="r0 lastrow">
+                            <td class="cell  c1" style=""><pre class="tablecell">{badTest[0]}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{badTest[1]}</pre></td>
+                    </tr>
+                </tbody>
             </table>
         '''
 
@@ -173,8 +194,10 @@ class QuestionN1(QuestionBase):
     def test(self, code: str) -> Result.Ok | Result.Fail:
         program = CProgramRunner(code)
 
+        static_tests = 3
+        random_tests = 20
         random.seed(self.seed)
-        for _ in range(5):
+        for _ in range(static_tests):
             programInput, expectedOutput, numbers = self.generateGoodTest()
             try:
                 result = program.run(programInput).strip()
@@ -184,8 +207,21 @@ class QuestionN1(QuestionBase):
                 return Result.Fail(programInput, expectedOutput, str(e))
 
         random.seed(self.seed + 1)
-        for _ in range(5):
+        for _ in range(static_tests):
             programInput, expectedOutput = self.generateBadTest()
+            try:
+                result = program.run(programInput).strip()
+                if result != expectedOutput:
+                    return Result.Fail(programInput, expectedOutput, result)
+            except Exception as e:
+                return Result.Fail(programInput, expectedOutput, str(e))
+
+        random.seed(int(time.time()))
+        for _ in range(random_tests):
+            if random.random() < 0.5:
+                programInput, expectedOutput, _ = self.generateGoodTest()
+            else:
+                programInput, expectedOutput = self.generateBadTest(True)
             try:
                 result = program.run(programInput).strip()
                 if result != expectedOutput:

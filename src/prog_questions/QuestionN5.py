@@ -3,12 +3,13 @@ from .utility import CProgramRunner, ExecutionError, CompilationError
 import random
 from faker import Faker
 import re
+import time
 
 fake = Faker()
 AVG_WORD_SIZE = 5
 
 class QuestionN5(QuestionBase):
-    questionName = 'Работа с массивом строк по различным критериям'
+    questionName = 'Задание 5, Работа с массивом строк по различным критериям'
 
     def __init__(self, *, seed, maxSentenceSize: int = 100):
         super().__init__(seed=seed, maxSentenceSize=maxSentenceSize)
@@ -31,8 +32,8 @@ class QuestionN5(QuestionBase):
             'lowercase_count',# максимальным количеством строчных букв
             'punctuation_count',# максимальным количеством знаков препинания
             'space_count',    # максимальным количеством пробелов
-            'palindrome',     # палиндром с максимальной длиной (или минимальной — в зависимости от выбора)
-            'word_length_variety', # максимальное разнообразие по длине слов
+            #'palindrome',     # палиндром с максимальной длиной (или минимальной — в зависимости от выбора)
+            #'word_length_variety', # максимальное разнообразие по длине слов
             'longest_word'    # строка с самым длинным словом
         ])
 
@@ -58,10 +59,10 @@ class QuestionN5(QuestionBase):
                     i = random.randint(1, len(words) - 1)
                     words[i] += extra
                     sentence = ' '.join(words)
-            
+
             # Для палиндромов (если используется эта метрика), можно было бы дополнительно генерировать,
             # но для простоты оставим обычные предложения
-            
+
         return sentence
 
     def getMetric(self, sentence: str) -> int:
@@ -69,7 +70,7 @@ class QuestionN5(QuestionBase):
         Рассчитывает значение метрики для конкретной строки.
         """
         # Вспомогательные функции
-        def count_vowels(s): 
+        def count_vowels(s):
             return sum(ch.lower() in 'aeiou' for ch in s)
         def count_consonants(s):
             return sum(ch.isalpha() and ch.lower() not in 'aeiou' for ch in s)
@@ -138,10 +139,10 @@ class QuestionN5(QuestionBase):
         metrics = [(self.getMetric(s), s) for s in sentences]
 
         # Определяем, нужно ли искать максимум или минимум
-        reverse = self.metricType.startswith('max')
+        reverse = not self.metricType.startswith('min')
 
         # Находим предложение с максимальным/минимальным значением метрики
-        bestMetric, bestSentence = max(metrics) if reverse else min(metrics)
+        bestMetric, bestSentence = max(metrics, key=lambda x: x[0]) if reverse else min(metrics, key=lambda x: x[0])
 
         # Формируем входные данные (количество строк + сами строки)
         programInput = f"{len(sentences)}\n" + '\n'.join(sentences) + '\n'
@@ -174,10 +175,10 @@ class QuestionN5(QuestionBase):
         }
 
         extraDescription = ''
-        if self.metricType in ['max_words', 'min_words']:
+        if self.metricType in ['max_words', 'min_words', 'longest_word']:
             extraDescription = '''
                 Предложение состоит из слов (слово == последовательность любых символов, <b>кроме символов пробела и точки</b>),
-                разделённых ровно одним символом пробела, и оканчивающееся символом точки.<br>
+                разделённых ровно одним символом пробела, и заканчивается символом точки.<br>
             '''
         elif self.metricType == 'special_chars':
             extraDescription = '''
@@ -190,24 +191,34 @@ class QuestionN5(QuestionBase):
 
         Faker.seed(self.seed)
         random.seed(self.seed)
+        saved_max_ssize = self.maxWords
+        self.maxWords = 5
         tests = self.generateTest(), self.generateTest()
+        self.maxWords = saved_max_ssize
 
         exampleTable = f'''
-            <table border>
-                <tr>
-                    <th>Входные данные</th><th>Результат</th>
-                </tr>
-                <tr>
-                    <td><p>{tests[0][0].replace(chr(10), '</p><p>')}</p></td><td>{tests[0][1]}</td>
-                </tr>
-                <tr>
-                    <td><p>{tests[1][0].replace(chr(10), '</p><p>')}</p></td><td>{tests[1][1]}</td>
-                </tr>
+            <table class="coderunnerexamples">
+                <thead>
+                    <tr>
+                        <th class="header c0" style="" scope="col">Входные данные</th>
+                        <th class="header c2 lastcol" style="" scope="col">Результат</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="r0 lastrow">
+                        <td class="cell  c1" style=""><pre class="tablecell">{tests[0][0].replace(chr(10), '</p><p>')}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{tests[0][1]}</pre></td>
+                    </tr>
+                    <tr class="r0 lastrow">
+                        <td class="cell  c1" style=""><pre class="tablecell">{tests[1][0].replace(chr(10), '</p><p>')}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{tests[1][1]}</pre></td>
+                    </tr>
+                </tbody>
             </table>
         '''
 
         return f'''
-            На вход программе подаётся число <b>N</b> — количество строк, затем <b>N строк</b>, каждая длиной не более <b>{self.maxSentenceSize} символов</b>.<br><br>
+            На вход программе подаётся число <b>N</b> — количество строк, затем <b>N строк</b>, каждая длиной не более <b>{self.maxSentenceSize} символов</b>. Каждая строка заканчивается символом '\\n'.<br><br>
             {extraDescription}
             Напишите программу, которая:
             <ol>
@@ -245,7 +256,7 @@ class QuestionN5(QuestionBase):
         # Добавляем защиту от случайного включения <string.h> при компиляции
         modifiedCode = f'''
             {code}
-            
+
             #ifdef _STRING_H
             #error You cannot include <string.h>
             #endif
@@ -261,6 +272,18 @@ class QuestionN5(QuestionBase):
         Faker.seed(self.seed)
         random.seed(self.seed)
         for _ in range(5):
+            programInput, expectedOutput = self.generateTest()
+            try:
+                result = program.run(programInput)
+                if result != expectedOutput:
+                    return Result.Fail(programInput, expectedOutput, result)
+            except ExecutionError as e:
+                return Result.Fail(programInput, expectedOutput, str(e))
+
+        seed = int(time.time())
+        Faker.seed(seed)
+        random.seed(seed)
+        for _ in range(20):
             programInput, expectedOutput = self.generateTest()
             try:
                 result = program.run(programInput)

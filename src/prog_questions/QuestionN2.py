@@ -2,6 +2,7 @@ from .QuestionBase import QuestionBase, Result
 from .utility import CProgramRunner, ExecutionError
 import random
 import re
+import time
 
 # Константы для работы с символами
 DIGITS = '0123456789'
@@ -10,7 +11,7 @@ SYMBOLS_UPPER = SYMBOLS_LOWER.upper()
 VOWELS = 'aeiouyAEIOUY'  # Гласные буквы (нижний и верхний регистр)
 
 class QuestionN2(QuestionBase):
-    questionName = 'Операции над строками'  # Название задачи
+    questionName = 'Задание 2, Операции над строками'  # Название задачи
 
     def __init__(self, *, seed, maxInputSize: int = 100):
         super().__init__(seed=seed, maxInputSize=maxInputSize)
@@ -167,24 +168,36 @@ class QuestionN2(QuestionBase):
             'unique_chars': 'удаляет <b>повторяющиеся символы</b>, оставляя только первые вхождения'
         }
 
+        # Hack to generate not long strings in example
+        save_max_size = self.maxInputSize
+        self.maxInputSize = 20
         # Генерируем тесты с использованием фиксированных seed для повторяемости
         random.seed(self.seed)
         goodTest = self.generateGoodTest()
         random.seed(self.seed + 1)
         badTest = self.generateBadTest()
 
+        self.maxInputSize = save_max_size
+
         # Формируем HTML-таблицу с примерами входных данных и результатов
         exampleTable = f'''
-            <table border>
-                <tr>
-                    <th>Входные данные</th><th>Результат</th>
-                </tr>
-                <tr>
-                    <td>{goodTest[0]}</td><td>{goodTest[1]}</td>
-                </tr>
-                <tr>
-                    <td>{badTest[0]}</td><td>{badTest[1]}</td>
-                </tr>
+            <table class="coderunnerexamples">
+                <thead>
+                    <tr>
+                        <th class="header c0" style="" scope="col">Входные данные</th>
+                        <th class="header c2 lastcol" style="" scope="col">Результат</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="r0 lastrow">
+                        <td class="cell  c1" style=""><pre class="tablecell">{goodTest[0]}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{goodTest[1]}</pre></td>
+                    </tr>
+                    <tr class="r0 lastrow">
+                        <td class="cell  c1" style=""><pre class="tablecell">{badTest[0]}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{badTest[1]}</pre></td>
+                    </tr>
+                </tbody>
             </table>
         '''
 
@@ -215,7 +228,7 @@ class QuestionN2(QuestionBase):
 
         # Проверяем 5 корректных тестов
         random.seed(self.seed)
-        for _ in range(5):
+        for _ in range(3):
             programInput, expectedOutput = self.generateGoodTest()
             try:
                 result = program.run(programInput + '\n')  # добавляем символ новой строки в конце
@@ -226,11 +239,21 @@ class QuestionN2(QuestionBase):
 
         # Проверяем 5 "плохих" тестов
         random.seed(self.seed + 1)
-        for _ in range(5):
+        for _ in range(3):
             programInput, expectedOutput = self.generateBadTest()
             try:
                 result = program.run(programInput + '\n')
                 if result != expectedOutput:
+                    return Result.Fail(programInput, expectedOutput, result)
+            except ExecutionError as e:
+                return Result.Fail(programInput, expectedOutput, str(e))
+
+        random.seed(int(time.time()))
+        for _ in range(30):
+            programInput, expectedOutput = self.generateGoodTest() if random.random() < 0.7 else self.generateBadTest()
+            try:
+                result = program.run(programInput + '\n')
+                if result.strip() != expectedOutput.strip():
                     return Result.Fail(programInput, expectedOutput, result)
             except ExecutionError as e:
                 return Result.Fail(programInput, expectedOutput, str(e))

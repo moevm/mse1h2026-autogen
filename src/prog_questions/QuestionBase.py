@@ -122,8 +122,8 @@ class QuestionBase(ABC):
 
             if success:
                 output['prologuehtml'] = '<h4>Всё хорошо</h4>'
-                commentsPercent = CommentMetric(code).get_comment_percentage()
-                output['epiloguehtml'] = f'<p>Процент комментариев: {commentsPercent}%</p>'
+                #commentsPercent = CommentMetric(code).get_comment_percentage()
+                #output['epiloguehtml'] = f'<p>Процент комментариев: {commentsPercent}%</p>'
             else:
                 output['prologuehtml'] = '<h4>Тесты не пройдены</h4>'
                 output['testresults'] = [['iscorrect', 'Ввод', 'Ожидаемый', 'Получено', 'iscorrect'], [success, result.input, result.expected, result.got, success]]

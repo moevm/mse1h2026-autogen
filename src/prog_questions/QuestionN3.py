@@ -2,9 +2,10 @@ from .QuestionBase import QuestionBase, Result
 from .utility import CProgramRunner, ExecutionError
 import random
 from functools import reduce
+import time
 
 class QuestionN3(QuestionBase):
-    questionName = 'Работа с массивом различных типов данных'
+    questionName = 'Задание 3, Работа с массивом различных типов данных'
 
     def __init__(self, *, seed):
         super().__init__(seed=seed)
@@ -12,10 +13,11 @@ class QuestionN3(QuestionBase):
 
         # Выбор типа данных из расширенного списка (~15 вариантов)
         self.dataType = random.choice([
-            'char', 'unsigned char', 'short', 'unsigned short', 'int', 'unsigned int',
+            #'char', 'unsigned char', 'short', 'unsigned short', 'int', 'unsigned int',
+            'int', 'unsigned int',
             'long', 'unsigned long', 'long long', 'unsigned long long',
             'float', 'double', 'long double',
-            '_Bool', 'size_t'
+            #'_Bool', 'size_t'
         ])
 
         # Выбор типа индексов элементов массива, по которым будет выполняться операция
@@ -85,7 +87,7 @@ class QuestionN3(QuestionBase):
                 # Запасной вариант — генерация целого числа в разумных пределах
                 return random.randint(-1000, 1000)
 
-    def generateTest(self) -> tuple[str, str]:
+    def generateTest(self, min_rand_len: int = 10) -> tuple[str, str]:
         """
         Генерирует тестовый вход и ожидаемый результат.
         - Создает массив чисел выбранного типа.
@@ -93,7 +95,7 @@ class QuestionN3(QuestionBase):
         - Выполняет выбранную операцию над выбранными элементами.
         - Возвращает входные данные и отформатированный результат как строки.
         """
-        length = random.randint(10, self.maxLength)  # длина массива
+        length = random.randint(min_rand_len, self.maxLength)  # длина массива
         numbers = [self.generateNumber() for _ in range(length)]  # генерация массива
 
         # Функция для проверки простоты числа (для выбора prime_indices)
@@ -180,26 +182,42 @@ class QuestionN3(QuestionBase):
             'prime_indices': 'простым индексам'
         }.get(self.elementType, self.elementType)
 
+        saved_max_len = self.maxLength
+        self.maxLength = 4
         # Генерируем пример входа и выхода
-        exampleInput, exampleOutput = self.generateTest()
+        exampleInput, exampleOutput = self.generateTest(min_rand_len=3)
+        self.maxLength = saved_max_len
 
         # Формируем таблицу с примером
         exampleTable = f'''
-            <table border>
-                <tr>
-                    <th>Входные данные</th><th>Результат</th>
-                </tr>
-                <tr>
-                    <td>{exampleInput}</td><td>{exampleOutput}</td>
-                </tr>
+            <table class="coderunnerexamples">
+                <thead>
+                    <tr>
+                        <th class="header c0" style="" scope="col">Входные данные</th>
+                        <th class="header c2 lastcol" style="" scope="col">Результат</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="r0 lastrow">
+                        <td class="cell  c1" style=""><pre class="tablecell">{exampleInput}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{exampleOutput}</pre></td>
+                    </tr>
+                </tbody>
             </table>
         '''
 
+        accuracy = ""
+        if self.dataType.find("float") != -1 or self.dataType.find("double") != -1:
+            num_type = "чисел с плавающей точкой"
+            #accuracy = "Используйте точность в 6 знаков после запятой.<br>"
+        elif self.dataType.find("unsinged") != -1:
+            num_type = "неотрицательных целых чисел"
+        else:
+            num_type = "целых чисел"
         # Возвращаем финальный текст задачи с подсказками
         return f'''
-            Напишите программу на C, которая получает число <b>N</b> (не более {self.maxLength}), затем <b>N</b> чисел типа <code>{self.dataType}</code>.<br>
-            Необходимо сохранить числа в массив соответствующего типа и вычислить {opText} элементов с {indexText} индексами.<br><br>
-            Тип данных: <b>{self.dataType}</b><br>
+            Напишите программу на C, которая получает число <b>N</b> (не более {self.maxLength}), затем <b>N</b> {num_type}</code>.<br>
+            Необходимо сохранить числа в массив и вычислить {opText} элементов с {indexText} индексами.<br>{accuracy}<br>
             <b>Пример</b>:<br><br>
             {exampleTable}
             Используйте правильный тип массива и корректный формат вывода.
@@ -229,15 +247,18 @@ class QuestionN3(QuestionBase):
         program = CProgramRunner(code)
 
         random.seed(self.seed)  # фиксируем seed для одинаковых тестов
-        for _ in range(5):
+        for i in range(30):
+            if i == 5:
+                random.seed(int(time.time()))
             programInput, expectedOutput = self.generateTest()
             try:
                 result = program.run(programInput)
                 if self.dataType in ['float', 'double', 'long double']:
                     try:
-                        result_val = float(result)
-                        expected_val = float(expectedOutput)
-                        if abs(result_val - expected_val) > 0.01:
+                        #result_val = float(result)
+                        #expected_val = float(expectedOutput)
+                        #if abs(result_val - expected_val) > 0.01:
+                        if result.strip() != expectedOutput.strip():
                             return Result.Fail(programInput, expectedOutput, result)
                     except ValueError:
                         return Result.Fail(programInput, expectedOutput, result)
@@ -245,7 +266,7 @@ class QuestionN3(QuestionBase):
                     if result.strip() not in ['0', '1'] or result.strip() != expectedOutput:
                         return Result.Fail(programInput, expectedOutput, result)
                 else:
-                    if result.strip() != expectedOutput:
+                    if result.strip() != expectedOutput.strip():
                         return Result.Fail(programInput, expectedOutput, result)
             except ExecutionError as e:
                 return Result.Fail(programInput, expectedOutput, str(e))
