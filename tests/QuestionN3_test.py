@@ -9,16 +9,17 @@ class TestQuestionN3:
         utility.CProgramRunner(self.question.preloadedCode)
 
     def test_question_text(self):
-        assert '<b>N</b> (<=15)' in self.question.questionText
-        assert 'произведение' in self.question.questionText
-        assert 'с нечётным индексом' in self.question.questionText
+        assert f'<b>N</b> (не более 100)' in self.question.questionText
+        assert f'результат побитового исключащего ИЛИ (XOR)' in self.question.questionText
+        assert f'int' in self.question.questionText
+        assert f'с нечётным индексом' in self.question.questionText
 
     def test_code_success_run(self):
         assert self.question.test(r'''
             #include <stdio.h>
 
             int main() {
-                int numbers[15] = { 0 };
+                int numbers[100] = { 0 };
                 int n = 0;
 
                 scanf("%d", &n);
@@ -26,9 +27,9 @@ class TestQuestionN3:
                     scanf("%d", &numbers[i]);
                 }
 
-                long long prod = 1;
+                long long prod = 0;
                 for (size_t i = 1; i < n; i += 2) {
-                    prod *= numbers[i];
+                    prod ^= numbers[i];
                 }
 
                 printf("%lld\n", prod);
@@ -43,7 +44,7 @@ class TestQuestionN3:
                 include <stdio.h>
 
                 int main() {
-                    int numbers[15] = { 0 };
+                    int numbers[100] = { 0 };
                     int n = 0;
 
                     scanf("%d", &n);
@@ -51,9 +52,9 @@ class TestQuestionN3:
                         scanf("%d", &numbers[i]);
                     }
 
-                    long long prod = 1;
+                    long long prod = 0;
                     for (size_t i = 1; i < n; i += 2) {
-                        prod *= numbers[i];
+                        prod ^= numbers[i];
                     }
 
                     printf("%lld\n", prod);
@@ -75,9 +76,9 @@ class TestQuestionN3:
                     scanf("%d", &numbers[i]);
                 }
 
-                long long prod = 1;
+                long long prod = 0;
                 for (size_t i = 1; i < n; i += 2) {
-                    prod *= numbers[i];
+                    prod ^= numbers[i];
                 }
 
                 printf("%lld\n", prod);
@@ -91,7 +92,7 @@ class TestQuestionN3:
             #include <stdio.h>
 
             int main() {
-                int numbers[15] = { 0 };
+                int numbers[100] = { 0 };
                 int n = 0;
 
                 scanf("%d", &n);
@@ -99,9 +100,9 @@ class TestQuestionN3:
                     scanf("%d", &numbers[i]);
                 }
 
-                long long prod = 1;
+                long long prod = 0;
                 for (size_t i = 1; i < n; i += 2) {
-                    prod *= numbers[i];
+                    prod ^= numbers[i];
                     prod += 1;
                 }
 
