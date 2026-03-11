@@ -17,25 +17,24 @@ class QuestionN5(QuestionBase):
 
         random.seed(self.seed)
         Faker.seed(self.seed)
-
-        # Расширенный список возможных метрик
-        self.metricType = random.choice([
-            'max_words',      # строка с максимальным количеством слов
-            'min_words',      # минимальным количеством слов
-            'max_length',     # максимальной длиной
-            'min_length',     # минимальной длиной
-            'special_chars',  # максимальным числом спецсимволов (не буквы/цифры/пробелы)
-            'digit_count',    # максимальным количеством цифр
-            'vowel_count',    # максимальным количеством гласных (a,e,i,o,u)
-            'consonant_count',# максимальным количеством согласных
-            'uppercase_count',# максимальным количеством заглавных букв
-            'lowercase_count',# максимальным количеством строчных букв
-            'punctuation_count',# максимальным количеством знаков препинания
-            'space_count',    # максимальным количеством пробелов
-            #'palindrome',     # палиндром с максимальной длиной (или минимальной — в зависимости от выбора)
-            #'word_length_variety', # максимальное разнообразие по длине слов
-            'longest_word'    # строка с самым длинным словом
+        
+        self.metricBase = random.choice([
+            'words',         # количество слов
+            'length',        # длина строки
+            'special_chars',  # спецсимволы
+            'digit_count',   # цифры
+            'vowel_count',   # гласные
+            'consonant_count',  # согласные
+            'uppercase_count',  # заглавные
+            'lowercase_count',  # строчные
+            'punctuation_count',  # знаки препинания
+            'space_count',   # пробелы
+            'longest_word'   # самое длинное слово
+            # 'palindrome',     # палиндром с максимальной длиной (или минимальной — в зависимости от выбора)
+            # 'word_length_variety', # максимальное (или минимальное) разнообразие по длине слов
         ])
+
+        self.metricDirection = random.choice(['min', 'max'])  # направление поиска
 
         # Определяем максимальное количество слов в одной строке (учитывая средний размер слова + пробел)
         self.maxWords = self.maxSentenceSize // (AVG_WORD_SIZE + 1)
@@ -49,9 +48,9 @@ class QuestionN5(QuestionBase):
         while not sentence or len(sentence) > self.maxSentenceSize:
             # Если метрика связана со словами — генерируем предложение с указанным числом слов,
             # иначе – случайное предложение с произвольным размером
-            sentence = fake.sentence(size, self.metricType.endswith('words'))
+            sentence = fake.sentence(size, self.metricBase in ['words', 'longest_word'])
 
-            if self.metricType == 'special_chars':
+            if self.metricBase == 'special_chars':
                 # Вставляем случайное количество спецсимволов в случайное слово (если слов >1)
                 extra = ''.join(random.choices('!@#$%^&*()_+=[]{}:;,.<>?', k=random.randint(1, 5)))
                 words = sentence.split()
@@ -91,11 +90,10 @@ class QuestionN5(QuestionBase):
         def longest_word_length(s):
             return max(len(word.strip('.,!?')) for word in s.split())
 
-        # Вычисляем метрику в зависимости от self.metricType
-        match self.metricType:
-            case 'max_words' | 'min_words':
+        match self.metricBase:
+            case 'words':
                 return len(sentence.split())
-            case 'max_length' | 'min_length':
+            case 'length':
                 return len(sentence)
             case 'special_chars':
                 return sum(1 for c in sentence if not c.isalnum() and c not in [' ', '\n'])
@@ -113,15 +111,15 @@ class QuestionN5(QuestionBase):
                 return count_punctuation(sentence)
             case 'space_count':
                 return count_spaces(sentence)
+            case 'longest_word':
+                return longest_word_length(sentence)
             case 'palindrome':
                 # Возвращаем длину строки, если это палиндром, иначе 0 (для max/min палиндромов)
                 return len(sentence) if is_palindrome(sentence) else 0
             case 'word_length_variety':
                 return word_length_variety(sentence)
-            case 'longest_word':
-                return longest_word_length(sentence)
             case _:
-                return 0  # по умолчанию
+                return 0
 
     def generateTest(self) -> tuple[str, str]:
         """
@@ -137,12 +135,12 @@ class QuestionN5(QuestionBase):
 
         # Вычисляем метрики для каждого предложения
         metrics = [(self.getMetric(s), s) for s in sentences]
-
-        # Определяем, нужно ли искать максимум или минимум
-        reverse = not self.metricType.startswith('min')
-
+        
         # Находим предложение с максимальным/минимальным значением метрики
-        bestMetric, bestSentence = max(metrics, key=lambda x: x[0]) if reverse else min(metrics, key=lambda x: x[0])
+        if self.metricDirection == 'max':
+            bestMetric, bestSentence = max(metrics, key=lambda x: x[0])
+        else:
+            bestMetric, bestSentence = min(metrics, key=lambda x: x[0])
 
         # Формируем входные данные (количество строк + сами строки)
         programInput = f"{len(sentences)}\n" + '\n'.join(sentences) + '\n'
@@ -156,35 +154,38 @@ class QuestionN5(QuestionBase):
         """
         Возвращает текст задания с описанием условия, включая пример.
         """
-        metricDescriptions = {
-            'max_words': 'предложение с <b>наибольшим числом слов</b>',
-            'min_words': 'предложение с <b>наименьшим числом слов</b>',
-            'max_length': 'строку с <b>наибольшей длиной</b>',
-            'min_length': 'строку с <b>наименьшей длиной</b>',
-            'special_chars': 'строку с <b>наибольшим числом спецсимволов</b> (не букв/цифр/пробелов)',
-            'digit_count': 'строку с <b>наибольшим количеством цифр</b>',
-            'vowel_count': 'строку с <b>наибольшим количеством гласных</b>',
-            'consonant_count': 'строку с <b>наибольшим количеством согласных</b>',
-            'uppercase_count': 'строку с <b>наибольшим количеством заглавных букв</b>',
-            'lowercase_count': 'строку с <b>наибольшим количеством строчных букв</b>',
-            'punctuation_count': 'строку с <b>наибольшим количеством знаков препинания</b>',
-            'space_count': 'строку с <b>наибольшим количеством пробелов</b>',
-            'palindrome': 'палиндром с <b>максимальной длиной</b>',
-            'word_length_variety': 'строку с <b>максимальным разнообразием длины слов</b>',
-            'longest_word': 'строку с <b>самым длинным словом</b>'
+        metricBaseDescriptions = {
+            'words': 'числом слов',
+            'length': 'длиной',
+            'special_chars': 'числом спецсимволов (не букв/цифр/пробелов)',
+            'digit_count': 'количеством цифр',
+            'vowel_count': 'количеством гласных букв (a, e, i, o, u)',
+            'consonant_count': 'количеством согласных букв',
+            'uppercase_count': 'количеством заглавных букв',
+            'lowercase_count': 'количеством строчных букв',
+            'punctuation_count': 'количеством знаков препинания',
+            'space_count': 'количеством пробелов',
+            'longest_word': 'длиной самого длинного слова'
         }
 
+        directionDescriptions = {
+            'max': 'наибольшим',
+            'min': 'наименьшим'
+        }
+        
+        metricDescription = f'строку с <b>{directionDescriptions[self.metricDirection]}</b> {metricBaseDescriptions[self.metricBase]}'
+
         extraDescription = ''
-        if self.metricType in ['max_words', 'min_words', 'longest_word']:
+        if self.metricBase in ['words', 'longest_word']:
             extraDescription = '''
                 Предложение состоит из слов (слово == последовательность любых символов, <b>кроме символов пробела и точки</b>),
                 разделённых ровно одним символом пробела, и заканчивается символом точки.<br>
             '''
-        elif self.metricType == 'special_chars':
+        elif self.metricBase == 'special_chars':
             extraDescription = '''
                 Спецсимволы — это любые символы, не являющиеся буквами, цифрами или пробелами.<br>
             '''
-        elif self.metricType == 'palindrome':
+        elif self.metricBase == 'palindrome':
             extraDescription = '''
                 Палиндром — строка, которая читается одинаково слева направо и справа налево без учета регистра и пробелов.<br>
             '''
@@ -223,7 +224,7 @@ class QuestionN5(QuestionBase):
             Напишите программу, которая:
             <ol>
                 <li>Считывает <b>N строк</b> из входного потока</li>
-                <li>Находит {metricDescriptions.get(self.metricType, 'требуемую строку по заданному критерию')}</li>
+                <li>Находит {metricDescription}</li>
                 <li>Выводит результат в формате: <b>&lt;значение&gt;: строка</b></li>
             </ol>
             <b>Нельзя использовать библиотеку <code>&lt;string.h&gt;</code></b><br><br>
