@@ -123,7 +123,7 @@ class QuestionN1(QuestionBase):
         # Protection from possible overflow in tests
         while True:
             if self.operation == 'pow':
-                valid_nums = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(self.inputSize - 1)]
+                valid_nums = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(validCount - 1)]
             elif self.operation == 'mul':
                 valid_nums = [random.randint(1, 15) for _ in range(validCount)]
             elif self.operation == 'sub':
