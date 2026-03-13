@@ -4,6 +4,7 @@ import random
 from faker import Faker
 import re
 import time
+import copy
 
 fake = Faker()
 AVG_WORD_SIZE = 5
@@ -34,7 +35,11 @@ class QuestionN5(QuestionBase):
             # 'word_length_variety', # максимальное (или минимальное) разнообразие по длине слов
         ])
 
-        self.metricDirection = random.choice(['min', 'max'])  # направление поиска
+        # направление: 'min' только для words и length, остальные - 'max'
+        if self.metricBase in ['words', 'length']:
+            self.metricDirection = random.choice(['min', 'max'])
+        else:
+            self.metricDirection = 'max'
 
         # Определяем максимальное количество слов в одной строке (учитывая средний размер слова + пробел)
         self.maxWords = self.maxSentenceSize // (AVG_WORD_SIZE + 1)
@@ -196,7 +201,6 @@ class QuestionN5(QuestionBase):
         self.maxWords = 5
         tests = self.generateTest(), self.generateTest()
         self.maxWords = saved_max_ssize
-
         exampleTable = f'''
             <table class="coderunnerexamples">
                 <thead>
