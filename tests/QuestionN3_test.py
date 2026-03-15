@@ -3,36 +3,38 @@ from utility import moodleInit
 import pytest
 
 class TestQuestionN3:
-    question = moodleInit(QuestionN3, seed=123)
+    question = moodleInit(QuestionN3, seed=456)
 
     def test_code_preload(self):
         utility.CProgramRunner(self.question.preloadedCode)
 
     def test_question_text(self):
-        assert f'<b>N</b> (не более 100)' in self.question.questionText
+        assert f'<b>N</b> (не более 30)' in self.question.questionText
         assert f'результат побитового исключащего ИЛИ (XOR)' in self.question.questionText
-        assert f'int' in self.question.questionText
-        assert f'с нечётным индексом' in self.question.questionText
+        assert f'неотрицательных целых чисел' in self.question.questionText
+        assert f'индексам, кратным 3' in self.question.questionText
 
     def test_code_success_run(self):
         assert self.question.test(r'''
             #include <stdio.h>
 
             int main() {
-                int numbers[100] = { 0 };
+                unsigned long numbers[30] = { 0 };
                 int n = 0;
 
                 scanf("%d", &n);
                 for (size_t i = 0; i < n; i++){
-                    scanf("%d", &numbers[i]);
+                    scanf("%lu", &numbers[i]);
                 }
 
-                long long prod = 0;
-                for (size_t i = 1; i < n; i += 2) {
-                    prod ^= numbers[i];
+                unsigned long prod = 0;
+                for (size_t i = 0; i < n; i ++) {
+                    if (i % 3 == 0) {  
+                        prod ^= numbers[i];
+                    }
                 }
 
-                printf("%lld\n", prod);
+                printf("%lu\n", prod);
 
                 return 0;
             }
@@ -49,15 +51,17 @@ class TestQuestionN3:
 
                     scanf("%d", &n);
                     for (size_t i = 0; i < n; i++){
-                        scanf("%d", &numbers[i]);
+                        scanf("%lu", &numbers[i]);
                     }
 
-                    long long prod = 0;
-                    for (size_t i = 1; i < n; i += 2) {
-                        prod ^= numbers[i];
+                    unsigned long prod = 0;
+                    for (size_t i = 0; i < n; i ++) {
+                        if (i % 3 == 0) {  
+                            prod ^= numbers[i];
+                        }
                     }
 
-                    printf("%lld\n", prod);
+                    printf("%lu\n", prod);
 
                     return 0;
                 }
@@ -73,15 +77,17 @@ class TestQuestionN3:
 
                 scanf("%d", &n);
                 for (size_t i = 0; i < n; i++){
-                    scanf("%d", &numbers[i]);
+                    scanf("%lu", &numbers[i]);
                 }
 
-                long long prod = 0;
-                for (size_t i = 1; i < n; i += 2) {
-                    prod ^= numbers[i];
+                unsigned long prod = 0;
+                for (size_t i = 0; i < n; i++) {
+                    if (i % 3 == 0) {  
+                        prod ^= numbers[i];
+                    }
                 }
 
-                printf("%lld\n", prod);
+                printf("%lu\n", prod);
 
                 return 0;
             }
@@ -97,13 +103,16 @@ class TestQuestionN3:
 
                 scanf("%d", &n);
                 for (size_t i = 0; i < n; i++){
-                    scanf("%d", &numbers[i]);
+                    scanf("%lu", &numbers[i]);
                 }
 
-                long long prod = 0;
-                for (size_t i = 1; i < n; i += 2) {
-                    prod ^= numbers[i];
-                    prod += 1;
+                unsigned long prod = 0;
+                for (size_t i = 0; i < n; i ++) {
+                    if (i % 3 == 0) {  
+                        prod ^= numbers[i];
+                        prod += 1;
+                    }
+                    
                 }
 
                 printf("%lld\n", prod);
