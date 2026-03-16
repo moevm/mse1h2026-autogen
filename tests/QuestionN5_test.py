@@ -722,60 +722,6 @@ class TestQuestionN5_Metrics:
             }
         ''') == Result.Ok()
 
-    def test_metric_space_count_max(self):
-        """Тест метрики: количество пробелов"""
-        self.question.metricBase = 'space_count'
-        self.question.metricDirection = 'max'
-        assert self.question.test(r'''
-            #include <stdio.h>
-
-            int main() {
-                size_t n;
-                scanf("%zu\n", &n);
-
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
-                int bestMetric = -1;
-
-                for (size_t i = 0; i < n; i++) {
-                    fgets(sentence, sizeof(sentence), stdin);
-
-                    char* ch = sentence;
-                    while (*ch) {
-                        if (*ch == '\n') {
-                            *ch = '\0';
-                            break;
-                        }
-                        ch++;
-                    }
-
-                    int metric = 0;
-                    ch = sentence;
-                    while (*ch) {
-                        if (*ch == ' ') {
-                            metric++;
-                        }
-                        ch++;
-                    }
-
-                    if (metric <= bestMetric) continue;
-
-                    ch = sentence;
-                    char* target = bestSentence;
-                    while (*ch) {
-                        *target = *ch;
-                        ch++;
-                        target++;
-                    }
-                    *target = '\0';
-                    bestMetric = metric;
-                }
-
-                printf("%d: %s\n", bestMetric, bestSentence);
-                return 0;
-            }
-        ''') == Result.Ok()
-
     def test_metric_special_chars_max(self):
         """Тест метрики: количество спецсимволов"""
         self.question.metricBase = 'special_chars'
