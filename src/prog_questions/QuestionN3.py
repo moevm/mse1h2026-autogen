@@ -68,7 +68,7 @@ class QuestionN3(QuestionBase):
             'unsigned long long': 64
         }
         if self.operationType in ['shift_left', 'shift_right']:
-            self.shiftVelue = 1
+            self.shiftValue = 1
             #max_shift = bit_width[self.dataType] - 1
             #self.shiftValue = min(self.shiftValue, max_shift)
 
