@@ -13,14 +13,14 @@ VOWELS = 'aeiouyAEIOUY'  # Гласные буквы (нижний и верхн
 class QuestionN2(QuestionBase):
     questionName = 'Задание 2, Операции над строками'  # Название задачи
 
-    def __init__(self, *, seed, maxInputSize: int = 100):
+    def __init__(self, *, seed, maxInputSize: int = 100, operation: str = None):
         super().__init__(seed=seed, maxInputSize=maxInputSize)
         self.maxInputSize = maxInputSize
 
         # Устанавливаем seed для повторяемости выбора операции
         random.seed(self.seed)
         # Случайно выбираем операцию для обработки строки
-        self.operation = random.choice([
+        self.operation = random.choice([ 
             'remove_digits',          # удалить все цифры
             'remove_upper',           # удалить все символы верхнего регистра
             'remove_lower',           # удалить все символы нижнего регистра
@@ -46,7 +46,7 @@ class QuestionN2(QuestionBase):
 
     # Применение выбранной операции к строке
     def applyOperation(self, s: str) -> str:
-        match self.operation:
+        match self.operation: 
             case 'remove_digits':
                 return re.sub(r'\d', '', s)  # удалить цифры
             case 'remove_upper':
@@ -94,7 +94,7 @@ class QuestionN2(QuestionBase):
                 shift = 1
                 result = []
 
-                for c in s:
+                for c in s: # перебор символов в строке (с - символ, s - строка)
                     if 'a' <= c <= 'z':
                         result.append(chr((ord(c) - ord('a') + shift) % 26 + ord('a')))
                     elif 'A' <= c <= 'Z':
@@ -152,7 +152,7 @@ class QuestionN2(QuestionBase):
         elif self.operation == 'unique_chars':
             inputString = ''.join(dict.fromkeys(''.join(random.choices(SYMBOLS_LOWER + DIGITS, k=5))))
         elif self.operation == 'caesar_cipher':
-            inputString = ''.join(random.choices(DIGITS + ' !@#$%^&*', k=5))
+            inputString = ''.join(random.choices(DIGITS + '!@#$%^&*', k=5))
         else:
             inputString = 'Test123'  # на всякий случай
 
@@ -243,7 +243,7 @@ class QuestionN2(QuestionBase):
     def test(self, code: str) -> Result.Ok | Result.Fail:
         program = CProgramRunner(code)
 
-        # Проверяем 5 корректных тестов
+        # Проверяем 5 корректных тестов 
         random.seed(self.seed)
         for _ in range(3):
             programInput, expectedOutput = self.generateGoodTest()
