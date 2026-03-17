@@ -28,14 +28,14 @@ class QuestionN3(QuestionBase):
 
         ])
 
-        self.intTypes = ['int', 'unsigned int', 'long', 'unsigned long', 'long long', 'unsigned long long', 'unsigned short']
+        self.intTypes = ['int', 'unsigned int', 'long', 'unsigned long', 'long long', 'unsigned long long', 'unsigned short', 'size_t', 'short']
         self.floatTypes = ['float', 'double', 'long double']
-        self.otherTypes = ['char', 'unsigned char', 'short', '_Bool', 'size_t']
+        self.otherTypes = ['char', 'unsigned char', '_Bool']
         # Выбор типа данных из расширенного списка (~15 вариантов)
         if self.operationType in ['sum', 'product', 'max', 'min', 'average']:
             self.dataType = random.choice(self.intTypes + self.floatTypes + self.otherTypes)
         else:
-            self.dataType = random.choice(self.intTypes)
+            self.dataType = random.choice(self.intTypes) #работа с битовыми операциями
 
         # Выбор типа индексов элементов массива, по которым будет выполняться операция
         self.elementType = random.choice([
@@ -150,14 +150,7 @@ class QuestionN3(QuestionBase):
 
         # Если выбранных элементов нет — обрабатываем по-особенному
         if not selected:
-            if self.operationType == 'product':
-                result = 1  # нейтральный элемент для произведения
-            elif self.operationType in ['max', 'min']:
-                result = 0  # если нет элементов, возвращаем 0
-            elif self.operationType in ['bit_and', 'bit_or', 'bit_xor']:
-                result = 0
-            else:
-                result = 0  # для суммы и среднего
+            result = 1 if self.operationType == 'product' else 0
 
         else:
             # Вычисляем результат в зависимости от operationType
