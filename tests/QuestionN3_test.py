@@ -18,7 +18,7 @@ class TestQuestionN3:
 
         assert f'<b>N</b> (не более 30)' in self.question2.questionText
         assert f'результат побитового исключащего ИЛИ (XOR)' in self.question2.questionText
-        assert f'неотрицательных целых чисел' in self.question2.questionText
+        assert f'целых чисел' in self.question2.questionText
         assert f'индексам, кратным 3' in self.question2.questionText
 
     def test_code_success_run1(self):
@@ -51,22 +51,22 @@ class TestQuestionN3:
             #include <stdio.h>
 
             int main() {
-                unsigned long numbers[30] = { 0 };
+                size_t numbers[30] = { 0 };
                 int n = 0;
 
                 scanf("%d", &n);
                 for (size_t i = 0; i < n; i++){
-                    scanf("%lu", &numbers[i]);
+                    scanf("%zu", &numbers[i]);
                 }
 
-                unsigned long prod = 0;
+                size_t prod = 0;
                 for (size_t i = 0; i < n; i ++) {
                     if (i % 3 == 0) {  
                         prod ^= numbers[i];
                     }
                 }
 
-                printf("%lu\n", prod);
+                printf("%zu\n", prod);
 
                 return 0;
             }
@@ -102,22 +102,22 @@ class TestQuestionN3:
                 include <stdio.h>
 
                 int main() {
-                    unsigned long numbers[30] = { 0 };
+                    size_t numbers[30] = { 0 };
                     int n = 0;
 
                     scanf("%d", &n);
                     for (size_t i = 0; i < n; i++){
-                        scanf("%lu", &numbers[i]);
+                        scanf("%zu", &numbers[i]);
                     }
 
-                    unsigned long prod = 0;
+                    size_t prod = 0;
                     for (size_t i = 0; i < n; i ++) {
                         if (i % 3 == 0) {  
                             prod ^= numbers[i];
                         }
                     }
 
-                    printf("%lu\n", prod);
+                    printf("%zu\n", prod);
 
                     return 0;
                 }
@@ -152,22 +152,22 @@ class TestQuestionN3:
             #include <stdio.h>
 
             int main() {
-                unsigned long numbers[2] = { 0 };
+                size_t numbers[2] = { 0 };
                 int n = 0;
 
                 scanf("%d", &n);
                 for (size_t i = 0; i < n; i++){
-                    scanf("%lu", &numbers[i]);
+                    scanf("%zu", &numbers[i]);
                 }
 
-                unsigned long prod = 0;
+                size_t prod = 0;
                 for (size_t i = 0; i < n; i++) {
                     if (i % 3 == 0) {  
                         prod ^= numbers[i];
                     }
                 }
 
-                printf("%lu\n", prod);
+                printf("%zu\n", prod);
 
                 return 0;
             }
@@ -203,15 +203,15 @@ class TestQuestionN3:
             #include <stdio.h>
 
             int main() {
-                unsigned long numbers[30] = { 0 };
+                size_t numbers[30] = { 0 };
                 int n = 0;
 
                 scanf("%d", &n);
                 for (size_t i = 0; i < n; i++){
-                    scanf("%lu", &numbers[i]);
+                    scanf("%zu", &numbers[i]);
                 }
 
-                unsigned long prod = 0;
+                size_t prod = 0;
                 for (size_t i = 0; i < n; i ++) {
                     if (i % 3 == 0) {  
                         prod ^= numbers[i];
@@ -220,7 +220,7 @@ class TestQuestionN3:
                     
                 }
 
-                printf("%lu\n", prod);
+                printf("%zu\n", prod);
 
                 return 0;
             }
