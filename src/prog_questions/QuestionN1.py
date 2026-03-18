@@ -5,11 +5,14 @@ import string
 import time
 
 BAD_NUMBERS = [
-    'eww',
+    'qww',
     'wolf',
     'owl',
     'xor'
 ]
+
+# Const value for safe tests (less than actual max int value in C)
+INT_MAX = 2_000_000_000
 
 class QuestionN1(QuestionBase):
     questionName = 'Задание 1, Операции с числами в различных системах счисления'
@@ -20,16 +23,13 @@ class QuestionN1(QuestionBase):
         random.seed(self.seed)
 
         self.inputSize = inputSize if inputSize else random.randint(3, 5)
-
-        #self.inputBase = random.choice([2, 8, 10, 16])
-        # Suddenly sadly, printf does not contain a binary conversion
+        # C printf/scanf do not support binary conversion, so we exclude base 2 from input
         self.inputBase = random.choice([8, 10, 16])
         self.outputBase = random.choice([x for x in [2, 8, 10, 16] if x != self.inputBase])
-        #self.outputBase = random.choice([x for x in [8, 10, 16] if x != self.inputBase])
         self.inputFormat = random.choice(['spaces', 'brackets', 'delimiter', 'squares'])
         self.delimiter = random.choice([';', ',', '|'])
         self.outputFormat = random.choice(['plain', 'brackets', 'prefix', 'labelled'])
-        self.operation = random.choice(['sum', 'sub', 'mul', 'div', 'mod', 'max', 'min', 'avg'])
+        self.operation = random.choice(['sum', 'sub', 'mul', 'div', 'mod', 'max', 'min', 'avg', 'pow'])
         self.prefixes = {2: '0b', 8: '0o', 16: '0x'}
 
     def toInput(self, x: int) -> str:
@@ -90,18 +90,60 @@ class QuestionN1(QuestionBase):
                 return min(nums)
             case 'avg':
                 return sum(nums) // len(nums)
+            case 'pow':
+                result = nums[0]
+                for x in nums[1:]:
+                    result **= x 
+                return result
 
     def generateGoodTest(self) -> tuple[str, str, list[int]]:
-        numbers = [random.randint(1, 100) for _ in range(self.inputSize)]
+        # Protection from possible overflow in tests
+        while True:
+            if self.operation == 'pow':
+                numbers = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(self.inputSize - 1)]
+            elif self.operation == 'mul':
+                numbers = [random.randint(1, 15) for _ in range(self.inputSize)]
+            elif self.operation == 'sub':
+                # Protection from mistakes with negative nums
+                numbers = [random.randint(1, 100) for _ in range(self.inputSize)]
+                numbers[0] = sum(numbers[1:]) + random.randint(1, 50)
+            else:
+                numbers = [random.randint(1, 100) for _ in range(self.inputSize)]
+
+            if self.operate(numbers) <= INT_MAX:
+                break
+
         programInput = self.formatInput([self.toInput(x) for x in numbers])
         expectedOutput = self.toOutput(self.operate(numbers))
         return programInput, expectedOutput, numbers
 
     def generateBadTest(self, random_bad_numbers: bool = False) -> tuple[str, str]:
         validCount = random.randint(0, self.inputSize - 1)
-        valid = [self.toInput(random.randint(1, 100)) for _ in range(validCount)]
+
+        # Protection from possible overflow in tests
+        while True:
+            if self.operation == 'pow':
+                if validCount == 0:
+                    valid_nums = []
+                else:
+                    valid_nums = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(validCount - 1)]
+            elif self.operation == 'mul':
+                valid_nums = [random.randint(1, 15) for _ in range(validCount)]
+            elif self.operation == 'sub':
+                valid_nums = [random.randint(1, 100) for _ in range(validCount)]
+                if validCount > 0:
+                    valid_nums[0] = sum(valid_nums[1:]) + random.randint(1, 50)
+            else:
+                valid_nums = [random.randint(1, 100) for _ in range(validCount)]
+
+            if validCount == 0 or self.operate(valid_nums) <= INT_MAX:
+                break
+
+        valid = [self.toInput(x) for x in valid_nums]
+
         if random_bad_numbers:
-            invalid = ["".join(random.choices(string.ascii_lowercase, k=random.randint(2, 5))) for _ in range(self.inputSize - validCount)]
+            # Generating text without [a,b,c,d,e,f] to avoid mistakes in hex
+            invalid = ["".join(random.choices("ghijklmnopqrstuvwxyz", k=random.randint(2, 5))) for _ in range(self.inputSize - validCount)]
         else:
             invalid = [random.choice(BAD_NUMBERS) for _ in range(self.inputSize - validCount)]
         all_inputs = valid + invalid
@@ -127,7 +169,8 @@ class QuestionN1(QuestionBase):
             'mod': 'остаток от деления (первое число поочередно делится на остальные)',
             'max': 'максимум из чисел',
             'min': 'минимум из чисел',
-            'avg': 'среднее арифметическое, округлённое вниз'
+            'avg': 'среднее арифметическое, округлённое вниз',
+            'pow': 'возведение в степень (первое число последовательно возводится в степень последующих чисел)'
         }[self.operation]
 
         inputFormatDescription = {
@@ -149,7 +192,7 @@ class QuestionN1(QuestionBase):
         random.seed(self.seed + 1)
         badTest = self.generateBadTest()
 
-        # Формируем таблицу с примером
+        # Formatting table with task
         exampleTable = f'''
             <table class="coderunnerexamples">
                 <thead>
