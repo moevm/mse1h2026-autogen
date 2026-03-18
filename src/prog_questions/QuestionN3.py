@@ -11,14 +11,31 @@ class QuestionN3(QuestionBase):
         super().__init__(seed=seed)
         random.seed(self.seed)  # Инициализируем генератор случайных чисел фиксированным seed для повторяемости
 
-        # Выбор типа данных из расширенного списка (~15 вариантов)
-        self.dataType = random.choice([
-            #'char', 'unsigned char', 'short', 'unsigned short', 'int', 'unsigned int',
-            'int', 'unsigned int',
-            'long', 'unsigned long', 'long long', 'unsigned long long',
-            'float', 'double', 'long double',
-            #'_Bool', 'size_t'
+        # Выбор типа операции, которую нужно выполнить над выбранными элементами
+        self.operationType = random.choice([
+            'sum',              # сумма
+            'product',          # произведение
+            'max',              # максимум
+            'min',              # минимум
+            'average',          # среднее арифметическое
+            'bit_and',          # побитовое И
+            'bit_or',           # побитое ИЛИ
+            'bit_xor',          # побитовое исключащющее ИЛИ
+            'bit_not',          # побитовое НЕТ
+            'shift_left',       # сдвиг влево на константу
+            'shift_right',      # сдвиг вправо на константу
+
+
         ])
+
+        self.intTypes = ['int', 'unsigned int', 'long', 'unsigned long', 'long long', 'unsigned long long', 'unsigned short', 'size_t', 'short']
+        self.floatTypes = ['float', 'double', 'long double']
+        self.otherTypes = ['char', 'unsigned char', '_Bool']
+        # Выбор типа данных из расширенного списка (~15 вариантов)
+        if self.operationType in ['sum', 'product', 'max', 'min', 'average']:
+            self.dataType = random.choice(self.intTypes + self.floatTypes + self.otherTypes)
+        else:
+            self.dataType = random.choice(self.intTypes) #работа с битовыми операциями
 
         # Выбор типа индексов элементов массива, по которым будет выполняться операция
         self.elementType = random.choice([
@@ -30,15 +47,6 @@ class QuestionN3(QuestionBase):
             'prime_indices'     # индексы — простые числа
         ])
 
-        # Выбор типа операции, которую нужно выполнить над выбранными элементами
-        self.operationType = random.choice([
-            'sum',              # сумма
-            'product',          # произведение
-            'max',              # максимум
-            'min',              # минимум
-            'average'           # среднее арифметическое
-        ])
-
         # Задание максимальной длины массива в зависимости от операции
         if self.operationType == 'product':
             self.maxLength = 15  # чтобы не было слишком больших произведений
@@ -46,6 +54,23 @@ class QuestionN3(QuestionBase):
             self.maxLength = 50
         else:
             self.maxLength = 30
+
+        bit_width = {
+            'char': 8,
+            'unsigned char': 8,
+            'short': 16,
+            'unsigned short': 16,
+            'int': 32,
+            'unsigned int': 32,
+            'long': 32,
+            'unsigned long': 32,
+            'long long': 64,
+            'unsigned long long': 64
+        }
+        if self.operationType in ['shift_left', 'shift_right']:
+            self.shiftValue = 1
+            #max_shift = bit_width[self.dataType] - 1
+            #self.shiftValue = min(self.shiftValue, max_shift)
 
     def generateNumber(self) -> float | int:
         """
@@ -125,12 +150,7 @@ class QuestionN3(QuestionBase):
 
         # Если выбранных элементов нет — обрабатываем по-особенному
         if not selected:
-            if self.operationType == 'product':
-                result = 1  # нейтральный элемент для произведения
-            elif self.operationType in ['max', 'min']:
-                result = 0  # если нет элементов, возвращаем 0
-            else:
-                result = 0  # для суммы и среднего
+            result = 1 if self.operationType == 'product' else 0
 
         else:
             # Вычисляем результат в зависимости от operationType
@@ -145,8 +165,27 @@ class QuestionN3(QuestionBase):
                     result = min(selected)
                 case 'average':
                     result = sum(selected) / len(selected)
-                case _:
-                    result = 0
+                case 'bit_and':
+                    result = selected[0]
+                    for num in selected[1:]:
+                        result &= num
+                case 'bit_or':
+                    result = selected[0]
+                    for num in selected[1:]:
+                        result |= num
+                case 'bit_xor':
+                    result = selected[0]
+                    for num in selected[1:]:
+                        result ^= num
+                case 'shift_left':
+                    shifted = [x << self.shiftValue for x in selected]
+                    result = sum(shifted)
+                case 'shift_right':
+                    shifted = [x >> self.shiftValue for x in selected]
+                    result = sum(shifted)
+                case 'bit_not':
+                    noted = [~x for x in selected]
+                    result = sum(noted)
 
         # Форматируем результат для вывода
         if self.dataType in ['float', 'double', 'long double']:
@@ -170,7 +209,13 @@ class QuestionN3(QuestionBase):
             'product': 'произведение',
             'max': 'максимум',
             'min': 'минимум',
-            'average': 'среднее арифметическое'
+            'average': 'среднее арифметическое',
+            'bit_and': 'результат побитового И (AND)',
+            'bit_or': 'результат побитового ИЛИ (OR)',
+            'bit_xor': 'результат побитового исключащего ИЛИ (XOR)',
+            'bit_not': 'сумму результатов побитового НЕТ (NOT)',
+            'shift_left': 'сумму результатов сдвига влево на 1',
+            'shift_right': 'сумму результатов сдвига вправо на 1',
         }.get(self.operationType, self.operationType)
 
         indexText = {
@@ -210,14 +255,34 @@ class QuestionN3(QuestionBase):
         if self.dataType.find("float") != -1 or self.dataType.find("double") != -1:
             num_type = "чисел с плавающей точкой"
             #accuracy = "Используйте точность в 6 знаков после запятой.<br>"
-        elif self.dataType.find("unsinged") != -1:
+        elif self.dataType.find("unsigned") != -1:
             num_type = "неотрицательных целых чисел"
         else:
             num_type = "целых чисел"
+
+        special_notes = []
+        if self.operationType == 'bit_and':
+            special_notes.append(f'''<li>Для пустого массива операция AND возвращает 0</li>''')
+        if self.operationType in ['shift_left', 'shift_right']:
+            special_notes.append(f'''<li>Сдвиг выполняется на константу {self.shiftValue}</li>''')
+            special_notes.append(f'''<li>После сдвига каждого элемента результаты суммируются</li>''')
+        if self.operationType == 'bit_not':
+            special_notes.append(f'''<li>После применения NOT к каждому элементу результаты суммируются</li>''')
+
+        special_cases = ''
+        if special_notes:
+            special_cases = f'''
+            <br>
+            Особые случаи:
+                <ul>
+                    {''.join(special_notes)}
+                </ul>
+            '''
         # Возвращаем финальный текст задачи с подсказками
         return f'''
             Напишите программу на C, которая получает число <b>N</b> (не более {self.maxLength}), затем <b>N</b> {num_type}</code>.<br>
             Необходимо сохранить числа в массив и вычислить {opText} элементов с {indexText} индексами.<br>{accuracy}<br>
+            {special_cases}
             <b>Пример</b>:<br><br>
             {exampleTable}
             Используйте правильный тип массива и корректный формат вывода.
