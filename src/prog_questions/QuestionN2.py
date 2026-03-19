@@ -13,39 +13,44 @@ VOWELS = 'aeiouyAEIOUY'  # Гласные буквы (нижний и верхн
 class QuestionN2(QuestionBase):
     questionName = 'Задание 2, Операции над строками'  # Название задачи
 
-    def __init__(self, *, seed, maxInputSize: int = 100):
+    def __init__(self, *, seed, maxInputSize: int = 100, operation: str = None):
         super().__init__(seed=seed, maxInputSize=maxInputSize)
         self.maxInputSize = maxInputSize
 
         # Устанавливаем seed для повторяемости выбора операции
         random.seed(self.seed)
         # Случайно выбираем операцию для обработки строки
-        self.operation = random.choice([
-            'remove_digits',          # удалить все цифры
-            'remove_upper',           # удалить все символы верхнего регистра
-            'remove_lower',           # удалить все символы нижнего регистра
-            'keep_digits',            # оставить только цифры
-            'to_upper',               # преобразовать в верхний регистр
-            'to_lower',               # преобразовать в нижний регистр
-            'replace_digits_star',    # заменить все цифры на '*'
-            'remove_non_alpha',       # удалить все, кроме букв
-            'remove_non_alnum',       # удалить все, кроме букв и цифр
-            'replace_vowels_dash',    # заменить гласные на '-'
-            'double_letters',         # удвоить все буквы
-            'reverse',                # обратить строку
-            'remove_vowels',          # удалить гласные буквы
-            'remove_consonants',      # удалить согласные буквы
-            'replace_spaces_underscore', # заменить пробелы на '_'
-            'count_digits',           # посчитать цифры и вывести их количество
-            'count_upper',            # посчитать заглавные буквы
-            'count_lower',            # посчитать строчные буквы
-            'sort_chars',             # отсортировать символы строки
-            'unique_chars'            # удалить повторяющиеся символы, оставить первые
-        ])
+        if operation is not None:
+            self.operation = operation  # <-- Эта строка должна быть!
+        else:
+            self.operation = random.choice([ 
+                'remove_digits',          # удалить все цифры
+                'remove_upper',           # удалить все символы верхнего регистра
+                'remove_lower',           # удалить все символы нижнего регистра
+                'keep_digits',            # оставить только цифры
+                'to_upper',               # преобразовать в верхний регистр
+                'to_lower',               # преобразовать в нижний регистр
+                'replace_digits_star',    # заменить все цифры на '*'
+                'remove_non_alpha',       # удалить все, кроме букв
+                'remove_non_alnum',       # удалить все, кроме букв и цифр
+                'replace_vowels_dash',    # заменить гласные на '-'
+                'double_letters',         # удвоить все буквы
+                'reverse',                # обратить строку
+                'remove_vowels',          # удалить гласные буквы
+                'remove_consonants',      # удалить согласные буквы
+                'replace_spaces_underscore', # заменить пробелы на '_'
+                'count_digits',           # посчитать цифры и вывести их количество
+                'count_upper',            # посчитать заглавные буквы
+                'count_lower',            # посчитать строчные буквы
+                'sort_chars',             # отсортировать символы строки
+                'unique_chars',           # удалить повторяющиеся символы, оставить первые
+                'caesar_cipher',          # шифр цезаря (сдвиг на 1)
+                'mirror_alphabet'         # зеркальный алфавит
+            ])
 
     # Применение выбранной операции к строке
     def applyOperation(self, s: str) -> str:
-        match self.operation:
+        match self.operation: 
             case 'remove_digits':
                 return re.sub(r'\d', '', s)  # удалить цифры
             case 'remove_upper':
@@ -89,6 +94,32 @@ class QuestionN2(QuestionBase):
                 seen = set()
                 # оставить только первые вхождения символов
                 return ''.join(c for c in s if not (c in seen or seen.add(c)))
+            case 'caesar_cipher': # шифр цезаря, каждая буква сдвигается на одну позицию вперед по алфавиту
+                shift = 1
+                result = []
+
+                for c in s: # перебор символов в строке (с - символ, s - строка)
+                    if 'a' <= c <= 'z':
+                        result.append(chr((ord(c) - ord('a') + shift) % 26 + ord('a')))
+                    elif 'A' <= c <= 'Z':
+                        result.append(chr((ord(c) - ord('A') + shift) % 26 + ord('A')))
+                    else:
+                        result.append(c)
+
+                return ''.join(result)
+            case 'mirror_alphabet':  # зеркальное отображение букв
+                result = []
+                for c in s: # перебор символов в строке (с - символ, s - строка)
+                    if 'a' <= c <= 'z':
+                        # формула: новый_символ = 'a' + 'z' - текущий_символ
+                        result.append(chr(ord('a') + ord('z') - ord(c)))
+                    elif 'A' <= c <= 'Z':
+                        # формула: новый_символ = 'A' + 'Z' - текущий_символ
+                        result.append(chr(ord('A') + ord('Z') - ord(c)))
+                    else:
+                        # небуквенные символы остаются без изменений
+                        result.append(c)
+                return ''.join(result)
             case _:
                 return s  # если операция не распознана, вернуть без изменений
 
@@ -137,6 +168,10 @@ class QuestionN2(QuestionBase):
             inputString = ''.join(random.choices(SYMBOLS_LOWER + SYMBOLS_UPPER + DIGITS, k=1))
         elif self.operation == 'unique_chars':
             inputString = ''.join(dict.fromkeys(''.join(random.choices(SYMBOLS_LOWER + DIGITS, k=5))))
+        elif self.operation == 'caesar_cipher':
+            inputString = ''.join(random.choices(DIGITS + '!@#$%^&*', k=5))
+        elif self.operation == 'mirror_alphabet': 
+            inputString = ''.join(random.choices(['a', 'z', 'A', 'Z', 'b', 'y', 'B', 'Y'], k=5))
         else:
             inputString = 'Test123'  # на всякий случай
 
@@ -165,7 +200,10 @@ class QuestionN2(QuestionBase):
             'count_upper': 'выводит <b>количество символов верхнего регистра</b>',
             'count_lower': 'выводит <b>количество символов нижнего регистра</b>',
             'sort_chars': 'сортирует <b>все символы строки по возрастанию</b>',
-            'unique_chars': 'удаляет <b>повторяющиеся символы</b>, оставляя только первые вхождения'
+            'unique_chars': 'удаляет <b>повторяющиеся символы</b>, оставляя только первые вхождения',
+            'caesar_cipher': 'шифрует строку <b>шифром Цезаря (сдвиг на 1)</b>',
+            'mirror_alphabet': 'заменяет каждую букву на её <b>зеркальное отображение в алфавите</b> (a↔z, b↔y, A↔Z, B↔Y)'
+
         }
 
         # Hack to generate not long strings in example
@@ -226,7 +264,7 @@ class QuestionN2(QuestionBase):
     def test(self, code: str) -> Result.Ok | Result.Fail:
         program = CProgramRunner(code)
 
-        # Проверяем 5 корректных тестов
+        # Проверяем 5 корректных тестов 
         random.seed(self.seed)
         for _ in range(3):
             programInput, expectedOutput = self.generateGoodTest()
