@@ -23,8 +23,8 @@ class TestQuestionN5:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = 0;
 
                 for (size_t i = 0; i < n; i++) {
@@ -73,8 +73,8 @@ class TestQuestionN5:
                     size_t n;
                     scanf("%zu\n", &n);
 
-                    char sentence[101] = { 0 };
-                    char bestSentence[101] = { 0 };
+                    char sentence[256] = { 0 };
+                    char bestSentence[256] = { 0 };
                     int bestMetric = 0;
 
                     for (size_t i = 0; i < n; i++) {
@@ -124,8 +124,8 @@ class TestQuestionN5:
                     size_t n;
                     scanf("%zu\n", &n);
 
-                    char sentence[101] = { 0 };
-                    char bestSentence[101] = { 0 };
+                    char sentence[256] = { 0 };
+                    char bestSentence[256] = { 0 };
                     int bestMetric = 0;
 
                     for (size_t i = 0; i < n; i++) {
@@ -177,8 +177,8 @@ class TestQuestionN5:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = 0;
 
                 for (size_t i = 0; i < n; i++) {
@@ -282,8 +282,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -334,7 +334,6 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                // Увеличен размер буфера
                 char sentence[256] = { 0 };
                 char bestSentence[256] = { 0 };
                 int bestMetric = -1;
@@ -389,8 +388,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -449,7 +448,6 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                // Увеличен размер буфера
                 char sentence[256] = { 0 };
                 char bestSentence[256] = { 0 };
                 int bestMetric = -1;
@@ -517,8 +515,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -571,8 +569,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -625,8 +623,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -679,8 +677,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -741,8 +739,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -806,8 +804,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -867,8 +865,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {
@@ -921,8 +919,8 @@ class TestQuestionN5_Metrics:
                 size_t n;
                 scanf("%zu\n", &n);
 
-                char sentence[101] = { 0 };
-                char bestSentence[101] = { 0 };
+                char sentence[256] = { 0 };
+                char bestSentence[256] = { 0 };
                 int bestMetric = -1;
 
                 for (size_t i = 0; i < n; i++) {

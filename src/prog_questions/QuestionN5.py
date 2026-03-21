@@ -70,6 +70,7 @@ class QuestionN5(QuestionBase):
             # Для палиндромов (если используется эта метрика), можно было бы дополнительно генерировать,
             # но для простоты оставим обычные предложения
 
+        sentence = re.sub(r'[^a-zA-Z0-9 .,!?]', '', sentence)
         return sentence
 
     def getMetric(self, sentence: str) -> int:
