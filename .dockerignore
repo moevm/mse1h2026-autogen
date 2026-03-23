@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+.venv/
+.idea/
+.vscode/
+dist/
+.coverage
+src/
+.git/
+README.md
+Dockerfile
+docker-compose.yml
