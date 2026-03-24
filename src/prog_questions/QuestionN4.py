@@ -79,7 +79,7 @@ class QuestionN4(QuestionBase):
         Для каждого вопроса вычислите разницу плоских (линейных) индексов двух элементов массива.<br>
         Плоский индекс вычисляется по формуле: i0*d1*d2*... + i1*d2*... + ... + iN, где d — размеры измерений.<br><br>
         Введите ответы на каждый вопрос с новой строки.<br><br>
-        Пример:<br>
+        <b>Пример:</b><br>
         <pre>
         Размеры массива: {dims_str}
         Вопрос 1: arr[1][2][3] и arr[2][3][4]
@@ -90,7 +90,7 @@ class QuestionN4(QuestionBase):
         20
         </pre>
         
-        Задание:<br>
+        <b>Задание:</b><br>
         <pre>{programInput}</pre>
         '''
 
@@ -103,6 +103,6 @@ class QuestionN4(QuestionBase):
         programInput, expectedOutput = self.generateTest()
 
         if code.strip() != expectedOutput.strip():
-            return Result.Fail(programInput, expectedOutput, code)
+            return Result.Fail(programInput, "Неверно. Попробуйте ещё раз", code)
 
         return Result.Ok()
