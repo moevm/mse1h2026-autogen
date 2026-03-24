@@ -103,6 +103,6 @@ class QuestionN4(QuestionBase):
         programInput, expectedOutput = self.generateTest()
 
         if code.strip() != expectedOutput.strip():
-            return Result.Fail(programInput, expectedOutput, code)
+            return Result.Fail(programInput, "Неверно. Попробуйте ещё раз", code)
 
         return Result.Ok()
