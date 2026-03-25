@@ -249,6 +249,9 @@ python generate.py --task autumn_1 --seed 42 --export xml --out task1.xml
 
 ## Итерация №2
 
+### Исходный код
+> [Ссылка](https://github.com/moevm/mse1h2026-autogen/tree/iteration_2)
+
 ### Презентация
 > [Ссылка](https://github.com/moevm/mse1h2026-autogen/blob/98dd3d5ca5a398c8ac2539f67de074f2f1c25923/%D0%98%D1%82%D0%B5%D1%80%D0%B0%D1%86%D0%B8%D1%8F%202%20%D0%BF%D1%80%D0%B5%D0%B7%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F.pdf)
 
