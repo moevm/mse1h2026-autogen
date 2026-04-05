@@ -19,8 +19,8 @@ class Task:
 
         self.then_number   = random.randint(*THEN_NUMBER_RANGE)
         self.else_number   = random.randint(*ELSE_NUMBER_RANGE)
-        then_opetaror = random.choice(MATH_OPERATORS)
-        else_opetaror = random.choice(MATH_OPERATORS)
+        then_operator = random.choice(MATH_OPERATORS)
+        else_operator = random.choice(MATH_OPERATORS)
 
         condition_string = ""
         for i in range(condition_length - 1):
@@ -28,13 +28,13 @@ class Task:
         condition_string += f"arr[{condition_indexes[condition_length - 1]}]"
 
         self.text = f"ЕСЛИ (({condition_string}) {condition_operator} {self.threshold})\n" \
-            f"ТО (arr[i] = arr[i - 1] {then_opetaror} {self.then_number})\n" \
-            f"ИНАЧЕ (arr[i] = arr[i] {else_opetaror} {self.else_number})"
+            f"ТО (arr[i] = arr[i - 1] {then_operator} {self.then_number})\n" \
+            f"ИНАЧЕ (arr[i] = arr[i] {else_operator} {self.else_number})"
 
         self.code = (
             "for i in range(len(arr)):\n"
             "\tprev = arr[i - 1] if (i - 1 >= 0) else 0\n"
            f"\tif ({condition_string}) {condition_operator} threshold:\n"
-           f"\t\tarr[i] = prev {then_opetaror} then_number\n"
+           f"\t\tarr[i] = prev {then_operator} then_number\n"
             "\telse:\n"
-           f"\t\tarr[i] = arr[i] {else_opetaror} else_number\n")
+           f"\t\tarr[i] = arr[i] {else_operator} else_number\n")
