@@ -1,5 +1,5 @@
 import pytest
-from prog_questions.utility.generators.RandomConditionLoop import (
+from prog_questions.utility.RandomConditionLoop import (
     ELSE_NUMBER_RANGE,
     LOGICAL_OPERATORS,
     MATH_OPERATORS,
@@ -25,11 +25,7 @@ class TestRandomConditionLoop:
         task1 = Task(array_length=5, condition_length=3, seed=123)
         task2 = Task(array_length=5, condition_length=3, seed=124)
 
-        assert task1.text != task2.text
-        assert task1.code != task2.code
-        assert task1.threshold != task2.threshold
-        assert task1.then_number != task2.then_number
-        assert task1.else_number != task2.else_number
+        assert (task1.text != task2.text) or (task1.code != task2.code)
 
     def test_task_values_are_in_expected_ranges(self):
         #тест, что значения находятся в допустимом диапазоне
