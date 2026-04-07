@@ -1,6 +1,6 @@
 from .QuestionBase import QuestionBase, Result
 from .utility import CProgramRunner, CompilationError, ExecutionError
-from riscv_course.random_expressions.random_condition_loop import Task
+from .utility.RandomConditionLoop import Task # генерация условия и тестов для задачи (без risc-v)
 import random
 from textwrap import dedent
 
