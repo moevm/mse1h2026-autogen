@@ -66,7 +66,6 @@ class TestStringOperations:
         op.is_upper = True
         op.is_vowel = True
         result = op.apply("hello")
-        print(result)
         assert result == "hEllO"
 
 

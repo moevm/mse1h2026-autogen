@@ -14,19 +14,19 @@ class StringOperation:
 
     def apply(self, s):
         # Применение операции к строке
-        pass
+        raise NotImplementedError("Метод 'apply' должен быть реализован в классе-наследнике")
 
     def get_text(self):
         # Получение текстового описания операции
-        pass
+        raise NotImplementedError("Метод 'get_text' должен быть реализован в классе-наследнике")
 
     def good_example(self):
         # Генерация примера, где операция дает видимый результат
-        pass
+        raise NotImplementedError("Метод 'good_example' должен быть реализован в классе-наследнике")
 
     def bad_example(self):
         # Генерация примера, где операция не меняет строку
-        pass
+        raise NotImplementedError("Метод 'bad_example' должен быть реализован в классе-наследнике")
 
 
 class DigitModuloStringOperation(StringOperation):
@@ -35,7 +35,7 @@ class DigitModuloStringOperation(StringOperation):
         self.divisor = random.randint(2, 9)
 
     def apply(self, s):
-        return ''.join(map(lambda x: str(int(x) % self.divisor) if x in '0123456789' else x, s))
+        return ''.join(map(lambda x: str(int(x) % self.divisor) if x.isdigit() else x, s))
 
     def get_text(self):
         return f"Замените все цифры в строке остатками их деления на {self.divisor}"
@@ -110,10 +110,12 @@ class UnderscoreStringOperation(StringOperation):
             f"{self.threshold}, то укажите его остаток от деления на {self.divisor}"
 
     def good_example(self):
-        return '_' * random.randint(1, 2)
+        left = '_' * random.randint(1, self.threshold)
+        right = '_' * random.randint(1, self.threshold)
+        return f"{left} {right}"
 
     def bad_example(self):
-        return self.good_example()
+        return fake.word().replace(' ', '')
 
 
 class ReplaceSubstringStringOperation(StringOperation):
@@ -121,6 +123,8 @@ class ReplaceSubstringStringOperation(StringOperation):
     def __init__(self):
         self.old = fake.random_uppercase_letter() * random.randint(2, 4)
         self.new = fake.random_uppercase_letter() * random.randint(2, 4)
+        while self.old == self.new:
+            self.new = fake.random_uppercase_letter() * random.randint(2, 4)
 
     def apply(self, s):
         return s.replace(self.old, self.new)
@@ -149,7 +153,6 @@ def generate_input_string(operations, min_length, max_length):
     while len(s) <= target_length:
         if s and random.randint(1, 2) == 1:
             s += ' '
-
         operation = random.choice(operations)
         add = operation.bad_example() if (random.randint(1, 3) == 1) else operation.good_example()
         if (len(s) + len(add)) > target_length:
@@ -169,9 +172,7 @@ def generate_operations(seed, num_operations):
     # Генерация списка случайных операций
     random.seed(seed)
     Faker.seed(seed)
-    operations = list(map(lambda x: x(), random.sample(
-        STRING_OPERATIONS, num_operations)))
-    random.shuffle(operations)
+    operations = list(map(lambda x: x(), random.sample(STRING_OPERATIONS, num_operations)))
     return operations
 
 
