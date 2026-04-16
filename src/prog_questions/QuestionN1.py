@@ -1,7 +1,6 @@
 from .QuestionBase import QuestionBase, Result
-from .utility import CProgramRunner, ExecutionError
+from .utility import CProgramRunner
 import random
-import string
 import time
 
 BAD_NUMBERS = [
@@ -26,7 +25,7 @@ class QuestionN1(QuestionBase):
         # C printf/scanf do not support binary conversion, so we exclude base 2 from input
         self.inputBase = random.choice([8, 10, 16])
         self.outputBase = random.choice([x for x in [2, 8, 10, 16] if x != self.inputBase])
-        self.inputFormat = random.choice(['spaces', 'brackets', 'delimiter', 'squares'])
+        self.inputFormat = random.choice(['spaces', 'brackets', 'delimiter', 'squares', 'noise'])
         self.delimiter = random.choice([';', ',', '|'])
         self.outputFormat = random.choice(['plain', 'brackets', 'prefix', 'labelled'])
         self.operation = random.choice(['sum', 'sub', 'mul', 'div', 'mod', 'max', 'min', 'avg', 'pow'])
@@ -59,6 +58,7 @@ class QuestionN1(QuestionBase):
             case 'brackets': return f"({self.delimiter.join(arr)})"
             case 'delimiter': return self.delimiter.join(arr)
             case 'squares': return f"[{self.delimiter.join(arr)}]"
+            case 'noise': return ' '.join(self.addNoise(t) for t in arr)
 
     def operate(self, nums: list[int]) -> int:
         match self.operation:
@@ -96,67 +96,58 @@ class QuestionN1(QuestionBase):
                     result **= x 
                 return result
 
-    def generateGoodTest(self) -> tuple[str, str, list[int]]:
-        # Protection from possible overflow in tests
+    def addNoise(self, token: str) -> str:
+        if self.inputBase == 16:
+            noise_chars = "!@#$%^&*ghijklmnopqrstuvwxyz"
+        else: 
+            noise_chars = "!@#$%^&*abcdefghijklmnopqrstuvwxyz"
+        prefix = "".join(random.choices(noise_chars, k=random.randint(0, 4)))
+        suffix = "".join(random.choices(noise_chars, k=random.randint(0, 4)))
+        return f"{prefix}{token}{suffix}"
+
+    def generateTest(self, is_good: bool = True, random_bad_numbers: bool = False) -> tuple[str, str, list[int]]:
+        count = self.inputSize if is_good else random.randint(0, self.inputSize - 1)
+
         while True:
             if self.operation == 'pow':
-                numbers = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(self.inputSize - 1)]
+                numbers = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(count - 1)] if count > 0 else []
             elif self.operation == 'mul':
-                numbers = [random.randint(1, 15) for _ in range(self.inputSize)]
+                numbers = [random.randint(1, 15) for _ in range(count)]
             elif self.operation == 'sub':
                 # Protection from mistakes with negative nums
-                numbers = [random.randint(1, 100) for _ in range(self.inputSize)]
-                numbers[0] = sum(numbers[1:]) + random.randint(1, 50)
+                numbers = [random.randint(1, 100) for _ in range(count)]
+                if count > 0:
+                    numbers[0] = sum(numbers[1:]) + random.randint(1, 50)
             else:
-                numbers = [random.randint(1, 100) for _ in range(self.inputSize)]
+                numbers = [random.randint(1, 100) for _ in range(count)]
 
-            if self.operate(numbers) <= INT_MAX:
+            if count == 0 or self.operate(numbers) <= INT_MAX:
                 break
 
-        programInput = self.formatInput([self.toInput(x) for x in numbers])
-        expectedOutput = self.toOutput(self.operate(numbers))
-        return programInput, expectedOutput, numbers
+        valid = [self.toInput(x) for x in numbers]
 
-    def generateBadTest(self, random_bad_numbers: bool = False) -> tuple[str, str]:
-        validCount = random.randint(0, self.inputSize - 1)
-
-        # Protection from possible overflow in tests
-        while True:
-            if self.operation == 'pow':
-                if validCount == 0:
-                    valid_nums = []
-                else:
-                    valid_nums = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(validCount - 1)]
-            elif self.operation == 'mul':
-                valid_nums = [random.randint(1, 15) for _ in range(validCount)]
-            elif self.operation == 'sub':
-                valid_nums = [random.randint(1, 100) for _ in range(validCount)]
-                if validCount > 0:
-                    valid_nums[0] = sum(valid_nums[1:]) + random.randint(1, 50)
+        if is_good:
+            programInput = self.formatInput(valid)
+            expectedOutput = self.toOutput(self.operate(numbers))
+            return programInput, expectedOutput, numbers
+        
+        else:
+            if random_bad_numbers:
+                # Generating text without [a,b,c,d,e,f] to avoid mistakes in hex
+                invalid = ["".join(random.choices("ghijklmnopqrstuvwxyz", k=random.randint(2, 5))) for _ in range(self.inputSize - count)]
             else:
-                valid_nums = [random.randint(1, 100) for _ in range(validCount)]
+                invalid = [random.choice(BAD_NUMBERS) for _ in range(self.inputSize - count)]
+            all_inputs = valid + invalid
+            random.shuffle(all_inputs)
 
-            if validCount == 0 or self.operate(valid_nums) <= INT_MAX:
-                break
-
-        valid = [self.toInput(x) for x in valid_nums]
-
-        if random_bad_numbers:
-            # Generating text without [a,b,c,d,e,f] to avoid mistakes in hex
-            invalid = ["".join(random.choices("ghijklmnopqrstuvwxyz", k=random.randint(2, 5))) for _ in range(self.inputSize - validCount)]
-        else:
-            invalid = [random.choice(BAD_NUMBERS) for _ in range(self.inputSize - validCount)]
-        all_inputs = valid + invalid
-        random.shuffle(all_inputs)
-
-        programInput = self.formatInput(all_inputs)
-        for i in range(self.inputSize):
-            if all_inputs[i] in invalid:
-                break
-        else:
-            i = 0
-        expectedOutput = f'error: {i}'
-        return programInput, expectedOutput
+            programInput = self.formatInput(all_inputs)
+            for i in range(self.inputSize):
+                if all_inputs[i] in invalid:
+                    break
+            else:
+                i = 0
+            expectedOutput = f'error: {i}'
+            return programInput, expectedOutput
 
     @property
     def questionText(self) -> str:
@@ -177,7 +168,8 @@ class QuestionN1(QuestionBase):
             'spaces': 'разделены пробелами',
             'brackets': f'в круглых скобках через символ <b>{self.delimiter}</b>',
             'delimiter': f'разделены символом <b>{self.delimiter}</b>',
-            'squares': f'в квадратных скобках через символ <b>{self.delimiter}</b>'
+            'squares': f'в квадратных скобках через символ <b>{self.delimiter}</b>',
+            'noise': f'вперемешку с посторонними символами, разделены пробелами'
         }[self.inputFormat]
 
         outputFormatDescription = {
@@ -188,9 +180,9 @@ class QuestionN1(QuestionBase):
         }[self.outputFormat]
 
         random.seed(self.seed)
-        goodTest = self.generateGoodTest()
+        goodTest = self.generateTest()
         random.seed(self.seed + 1)
-        badTest = self.generateBadTest()
+        badTest = self.generateTest(is_good=False)
 
         # Formatting table with task
         exampleTable = f'''
@@ -241,7 +233,7 @@ class QuestionN1(QuestionBase):
         random_tests = 20
         random.seed(self.seed)
         for _ in range(static_tests):
-            programInput, expectedOutput, numbers = self.generateGoodTest()
+            programInput, expectedOutput, _ = self.generateTest()
             try:
                 result = program.run(programInput).strip()
                 if result != expectedOutput:
@@ -251,7 +243,7 @@ class QuestionN1(QuestionBase):
 
         random.seed(self.seed + 1)
         for _ in range(static_tests):
-            programInput, expectedOutput = self.generateBadTest()
+            programInput, expectedOutput = self.generateTest(is_good=False)
             try:
                 result = program.run(programInput).strip()
                 if result != expectedOutput:
@@ -262,9 +254,9 @@ class QuestionN1(QuestionBase):
         random.seed(int(time.time()))
         for _ in range(random_tests):
             if random.random() < 0.5:
-                programInput, expectedOutput, _ = self.generateGoodTest()
+                programInput, expectedOutput, _ = self.generateTest()
             else:
-                programInput, expectedOutput = self.generateBadTest(True)
+                programInput, expectedOutput = self.generateTest(is_good=False, random_bad_numbers=True)
             try:
                 result = program.run(programInput).strip()
                 if result != expectedOutput:
