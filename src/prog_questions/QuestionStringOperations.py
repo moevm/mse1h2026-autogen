@@ -1,6 +1,6 @@
 from .QuestionBase import QuestionBase, Result
 from .utility import CProgramRunner, CompilationError, ExecutionError
-from riscv_course.random_expressions.string_operations import generate_operations, generate_input_string, apply_operations, generate_text
+from .utility.StringOperations import generate_operations, generate_input_string, apply_operations, generate_text # генерация операций и тестов для задачи (без risc-v)
 from textwrap import dedent
 import random
 
