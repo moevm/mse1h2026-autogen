@@ -77,7 +77,6 @@ class QuestionN4(QuestionBase):
         return f'''
         Вам дан многомерный массив с размерами {dims_str}.<br>
         Для каждого вопроса вычислите разницу плоских (линейных) индексов двух элементов массива.<br>
-        Плоский индекс вычисляется по формуле: i0*d1*d2*... + i1*d2*... + ... + iN, где d — размеры измерений.<br><br>
         Введите ответы на каждый вопрос с новой строки.<br><br>
         <b>Пример:</b><br>
         <pre>
@@ -102,7 +101,9 @@ class QuestionN4(QuestionBase):
         random.seed(self.seed)
         programInput, expectedOutput = self.generateTest()
 
-        if code.strip() != expectedOutput.strip():
+        user_lines = [line.strip() for line in code.strip().splitlines()]
+        expected_lines = [line.strip() for line in expectedOutput.strip().splitlines()]
+        if user_lines  != expected_lines:
             return Result.Fail(programInput, "Неверно. Попробуйте ещё раз", code)
 
         return Result.Ok()
