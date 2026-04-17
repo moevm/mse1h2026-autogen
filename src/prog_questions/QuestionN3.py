@@ -28,8 +28,8 @@ class QuestionN3(QuestionBase):
 
         ])
 
-        self.intTypes = ['int', 'unsigned int', 'long', 'unsigned long', 'long long', 'unsigned long long', 'unsigned short', 'size_t', 'short']
-        self.floatTypes = ['float', 'double', 'long double']
+        self.intTypes = ['int', 'unsigned int']
+        self.floatTypes = ['double']
         self.otherTypes = ['char', 'unsigned char', '_Bool']
         # Выбор типа данных из расширенного списка (~15 вариантов)
         if self.operationType in ['sum', 'product', 'max', 'min', 'average']:
@@ -55,22 +55,14 @@ class QuestionN3(QuestionBase):
         else:
             self.maxLength = 30
 
-        bit_width = {
-            'char': 8,
-            'unsigned char': 8,
-            'short': 16,
-            'unsigned short': 16,
-            'int': 32,
-            'unsigned int': 32,
-            'long': 32,
-            'unsigned long': 32,
-            'long long': 64,
-            'unsigned long long': 64
-        }
+        self.shiftValue = 1 
+        
         if self.operationType in ['shift_left', 'shift_right']:
-            self.shiftValue = 1
-            #max_shift = bit_width[self.dataType] - 1
-            #self.shiftValue = min(self.shiftValue, max_shift)
+            if self.dataType == 'int':
+                max_shift = 30
+            else:
+                max_shift = 31
+            self.shiftValue = random.randint(1, max_shift)
 
     def generateNumber(self) -> float | int:
         """
@@ -82,34 +74,20 @@ class QuestionN3(QuestionBase):
                 return random.randint(-128, 127)
             case 'unsigned char':
                 return random.randint(0, 255)
-            case 'short':
-                return random.randint(-32_768, 32_767)
-            case 'unsigned short':
-                return random.randint(0, 65_535)
+            
             case 'int':
                 return random.randint(-1_000_000, 1_000_000)
+
             case 'unsigned int':
                 return random.randint(0, 1_000_000)
-            case 'long':
-                return random.randint(-2_000_000, 2_000_000)
-            case 'unsigned long':
-                return random.randint(0, 2_000_000)
-            case 'long long':
-                return random.randint(-10**12, 10**12)
-            case 'unsigned long long':
-                return random.randint(0, 10**12)
-            case 'float':
-                return round(random.uniform(-1000.0, 1000.0), 3)
+
             case 'double':
                 return round(random.uniform(-1e6, 1e6), 6)
-            case 'long double':
-                return round(random.uniform(-1e9, 1e9), 8)
+
             case '_Bool':
                 return random.choice([0, 1])
-            case 'size_t':
-                return random.randint(0, 2**32 - 1)
+            
             case _:
-                # Запасной вариант — генерация целого числа в разумных пределах
                 return random.randint(-1000, 1000)
 
     def generateTest(self, min_rand_len: int = 10) -> tuple[str, str]:
@@ -188,7 +166,7 @@ class QuestionN3(QuestionBase):
                     result = sum(noted)
 
         # Форматируем результат для вывода
-        if self.dataType in ['float', 'double', 'long double']:
+        if self.dataType in self.floatTypes:
             expectedOutput = f'{result:.6f}'  # 6 знаков после запятой для float
         elif self.dataType == '_Bool':
             expectedOutput = str(int(bool(result)))  # 0 или 1
@@ -214,8 +192,8 @@ class QuestionN3(QuestionBase):
             'bit_or': 'результат побитового ИЛИ (OR)',
             'bit_xor': 'результат побитового исключащего ИЛИ (XOR)',
             'bit_not': 'сумму результатов побитового НЕТ (NOT)',
-            'shift_left': 'сумму результатов сдвига влево на 1',
-            'shift_right': 'сумму результатов сдвига вправо на 1',
+            'shift_left': f'сумму результатов сдвига влево на {self.shiftValue}',
+            'shift_right': f'сумму результатов сдвига вправо на {self.shiftValue}',
         }.get(self.operationType, self.operationType)
 
         indexText = {
@@ -252,7 +230,7 @@ class QuestionN3(QuestionBase):
         '''
 
         accuracy = ""
-        if self.dataType.find("float") != -1 or self.dataType.find("double") != -1:
+        if 'double' in self.dataType:
             num_type = "чисел с плавающей точкой"
             #accuracy = "Используйте точность в 6 знаков после запятой.<br>"
         elif self.dataType.find("unsigned") != -1:
@@ -318,7 +296,7 @@ class QuestionN3(QuestionBase):
             programInput, expectedOutput = self.generateTest()
             try:
                 result = program.run(programInput)
-                if self.dataType in ['float', 'double', 'long double']:
+                if self.dataType == 'double':
                     try:
                         #result_val = float(result)
                         #expected_val = float(expectedOutput)
