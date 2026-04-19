@@ -20,7 +20,7 @@ class QuestionN2(QuestionBase):
         # Устанавливаем seed для повторяемости выбора операции
         random.seed(self.seed)
         # Случайно выбираем операцию для обработки строки
-        self.operation = random.choice([ 
+        self.operation = random.choice([
             'remove_digits',          # удалить все цифры
             'remove_upper',           # удалить все символы верхнего регистра
             'remove_lower',           # удалить все символы нижнего регистра
@@ -46,7 +46,7 @@ class QuestionN2(QuestionBase):
 
     # Применение выбранной операции к строке
     def applyOperation(self, s: str) -> str:
-        match self.operation: 
+        match self.operation:
             case 'remove_digits':
                 return re.sub(r'\d', '', s)  # удалить цифры
             case 'remove_upper':
@@ -244,7 +244,7 @@ class QuestionN2(QuestionBase):
     def test(self, code: str) -> Result.Ok | Result.Fail:
         program = CProgramRunner(code)
 
-        # Проверяем 5 корректных тестов 
+        # Проверяем 5 корректных тестов
         random.seed(self.seed)
         for _ in range(3):
             programInput, expectedOutput = self.generateGoodTest()
