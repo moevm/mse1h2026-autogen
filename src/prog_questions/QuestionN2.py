@@ -41,7 +41,7 @@ class QuestionN2(QuestionBase):
             'count_lower',            # посчитать строчные буквы
             'sort_chars',             # отсортировать символы строки
             'unique_chars',           # удалить повторяющиеся символы, оставить первые
-            'caesar_cipher'           # шифр цезаря (сдвиг на 1)
+            'caesar_cipher'           # шифр цезаря
         ])
 
     # Применение выбранной операции к строке
@@ -90,11 +90,12 @@ class QuestionN2(QuestionBase):
                 seen = set()
                 # оставить только первые вхождения символов
                 return ''.join(c for c in s if not (c in seen or seen.add(c)))
-            case 'caesar_cipher': # шифр цезаря, каждая буква сдвигается на одну позицию вперед по алфавиту
-                shift = 1
+            case 'caesar_cipher':  # шифр цезаря, сдвиг по seed
+                shift_rng = random.Random(self.seed + 1000)
+                shift = shift_rng.randint(1, 5)
                 result = []
 
-                for c in s: # перебор символов в строке (с - символ, s - строка)
+                for c in s:
                     if 'a' <= c <= 'z':
                         result.append(chr((ord(c) - ord('a') + shift) % 26 + ord('a')))
                     elif 'A' <= c <= 'Z':
@@ -182,7 +183,7 @@ class QuestionN2(QuestionBase):
             'count_lower': 'выводит <b>количество символов нижнего регистра</b>',
             'sort_chars': 'сортирует <b>все символы строки по возрастанию</b>',
             'unique_chars': 'удаляет <b>повторяющиеся символы</b>, оставляя только первые вхождения',
-            'caesar_cipher': 'шифрует строку <b>шифром Цезаря (сдвиг на 1)</b>'
+            'caesar_cipher': 'шифрует строку <b>шифром Цезаря</b>'
         }
 
         # Hack to generate not long strings in example
