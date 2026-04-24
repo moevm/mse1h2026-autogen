@@ -13,7 +13,7 @@ class TestQuestionN3:
     def test_question_text(self):
         assert f'<b>N</b> (не более 30)' in self.question1.questionText
         assert f'сумму' in self.question1.questionText
-        assert f'целых чисел' in self.question1.questionText
+        assert f'чисел с плавающей точкой' in self.question1.questionText
         assert f'нечётным' in self.question1.questionText
 
         assert f'<b>N</b> (не более 30)' in self.question2.questionText
@@ -26,20 +26,20 @@ class TestQuestionN3:
             #include <stdio.h>
 
             int main() {
-                long long numbers[30] = { 0 };
+                double numbers[30] = { 0 };
                 int n = 0;
 
                 scanf("%d", &n);
                 for (size_t i = 0; i < n; i++){
-                    scanf("%lld", &numbers[i]);
+                    scanf("%lf", &numbers[i]);
                 }
 
-                long long prod = 0;
+                double prod = 0;
                 for (size_t i = 1; i < n; i+=2) {
                     prod += numbers[i];
                 }
 
-                printf("%lld\n", prod);
+                printf("%.6f\n", prod);
 
                 return 0;
             }

@@ -79,7 +79,7 @@ class TestQuestionN2Caesar:
                 // Ошибка: цикл выходит за пределы строки (i <= 150)
                 for (int i = 0; i <= 150; i++) {
                     if (text[i] >= 'a' && text[i] <= 'z') {
-                        text[i] = ((text[i] - 'a' + 1) % 26) + 'a';
+                        text[i] = ((text[i] - 'a' + 5) % 26) + 'a';
                     }
                 }
                 

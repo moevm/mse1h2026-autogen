@@ -28,6 +28,13 @@ class TestQuestionN4:
         _, expectedOutput = self.question.generateTest()
         assert self.question.test('  ' + expectedOutput + '  ') == Result.Ok()
 
+    def test_correct_answer_with_spaces_per_line(self):
+        # пробелы вокруг каждой строки ответа не должны мешать
+        random.seed(self.question.seed)
+        _, expectedOutput = self.question.generateTest()
+        padded = '\n'.join('  ' + line + '  ' for line in expectedOutput.strip().splitlines())
+        assert self.question.test(padded) == Result.Ok()
+
     def test_wrong_answer(self):
         # неверный ответ не должен засчитываться
         assert self.question.test('9999999\n9999999\n') != Result.Ok()
