@@ -13,7 +13,7 @@ VOWELS = 'aeiouyAEIOUY'  # Гласные буквы (нижний и верхн
 class QuestionN2(QuestionBase):
     questionName = 'Задание 2, Операции над строками'  # Название задачи
 
-    def __init__(self, *, seed, maxInputSize: int = 100):
+    def __init__(self, *, seed, maxInputSize: int = 100, operation: str = None):
         super().__init__(seed=seed, maxInputSize=maxInputSize)
         self.maxInputSize = maxInputSize
 
@@ -40,7 +40,8 @@ class QuestionN2(QuestionBase):
             'count_upper',            # посчитать заглавные буквы
             'count_lower',            # посчитать строчные буквы
             'sort_chars',             # отсортировать символы строки
-            'unique_chars'            # удалить повторяющиеся символы, оставить первые
+            'unique_chars',           # удалить повторяющиеся символы, оставить первые
+            'caesar_cipher'           # шифр цезаря
         ])
 
     # Применение выбранной операции к строке
@@ -89,6 +90,20 @@ class QuestionN2(QuestionBase):
                 seen = set()
                 # оставить только первые вхождения символов
                 return ''.join(c for c in s if not (c in seen or seen.add(c)))
+            case 'caesar_cipher':  # шифр цезаря, сдвиг по seed
+                shift_rng = random.Random(self.seed + 1000)
+                shift = shift_rng.randint(1, 5)
+                result = []
+
+                for c in s:
+                    if 'a' <= c <= 'z':
+                        result.append(chr((ord(c) - ord('a') + shift) % 26 + ord('a')))
+                    elif 'A' <= c <= 'Z':
+                        result.append(chr((ord(c) - ord('A') + shift) % 26 + ord('A')))
+                    else:
+                        result.append(c)
+
+                return ''.join(result)
             case _:
                 return s  # если операция не распознана, вернуть без изменений
 
@@ -137,6 +152,8 @@ class QuestionN2(QuestionBase):
             inputString = ''.join(random.choices(SYMBOLS_LOWER + SYMBOLS_UPPER + DIGITS, k=1))
         elif self.operation == 'unique_chars':
             inputString = ''.join(dict.fromkeys(''.join(random.choices(SYMBOLS_LOWER + DIGITS, k=5))))
+        elif self.operation == 'caesar_cipher':
+            inputString = ''.join(random.choices(DIGITS + '!@#$%^&*', k=5))
         else:
             inputString = 'Test123'  # на всякий случай
 
@@ -165,7 +182,8 @@ class QuestionN2(QuestionBase):
             'count_upper': 'выводит <b>количество символов верхнего регистра</b>',
             'count_lower': 'выводит <b>количество символов нижнего регистра</b>',
             'sort_chars': 'сортирует <b>все символы строки по возрастанию</b>',
-            'unique_chars': 'удаляет <b>повторяющиеся символы</b>, оставляя только первые вхождения'
+            'unique_chars': 'удаляет <b>повторяющиеся символы</b>, оставляя только первые вхождения',
+            'caesar_cipher': 'шифрует строку <b>шифром Цезаря</b>'
         }
 
         # Hack to generate not long strings in example

@@ -1,7 +1,5 @@
 from .QuestionBase import QuestionBase, Result
-from .utility import CProgramRunner, ExecutionError, CompilationError
 import random
-import re
 
 class QuestionN4(QuestionBase):
     questionName = 'Индексация многомерного массива и вычисление разницы плоских индексов'
@@ -72,20 +70,15 @@ class QuestionN4(QuestionBase):
         Текст задания с пояснениями.
         """
         dims_str = ''.join([f'[{x}]' for x in self.arr_dims])
+
+        random.seed(self.seed)
+        programInput, expectedOutput = self.generateTest()
+
         return f'''
         Вам дан многомерный массив с размерами {dims_str}.<br>
-        Индексация элементов массива ведется по нескольким измерениям.<br>
-        Напишите программу на C, которая:<br>
-        <ol>
-            <li>Для заданных двух многомерных индексов вычисляет соответствующие плоские индексы.</li>
-            <li>Находит разницу между этими плоскими индексами.</li>
-        </ol>
-        Формат входных данных:<br>
-        Первая строка содержит размеры массива.<br>
-        Далее идут две строки с индексами в формате arr[...][...][...] и arr[...][...][...].<br>
-        Формат вывода:<br>
-        Одно число — разница плоских индексов.<br><br>
-        Пример:<br>
+        Для каждого вопроса вычислите разницу плоских (линейных) индексов двух элементов массива.<br>
+        Введите ответы на каждый вопрос с новой строки.<br><br>
+        <b>Пример:</b><br>
         <pre>
         Размеры массива: {dims_str}
         Вопрос 1: arr[1][2][3] и arr[2][3][4]
@@ -95,34 +88,22 @@ class QuestionN4(QuestionBase):
         45
         20
         </pre>
+        
+        <b>Задание:</b><br>
+        <pre>{programInput}</pre>
         '''
 
     @property
     def preloadedCode(self) -> str:
-        return '\n'.join([
-            '#include <stdio.h>',
-            '',
-            'int main() {',
-            '    // Реализуйте чтение входных данных и вычисление',
-            '    return 0;',
-            '}'
-        ])
+        return ''
 
     def test(self, code: str) -> Result.Ok | Result.Fail:
-        # Проверим, что не используется запрещённые библиотеки (если нужно)
-        if re.search(r'#include\s*<string\.h>', code):
-            raise CompilationError('Использовать <string.h> нельзя')
-
-        program = CProgramRunner(code)
-
         random.seed(self.seed)
-        for _ in range(5):
-            programInput, expectedOutput = self.generateTest()
-            try:
-                result = program.run(programInput)
-                if result.strip() != expectedOutput.strip():
-                    return Result.Fail(programInput, expectedOutput, result)
-            except ExecutionError as e:
-                return Result.Fail(programInput, expectedOutput, str(e))
+        programInput, expectedOutput = self.generateTest()
+
+        user_lines = [line.strip() for line in code.strip().splitlines()]
+        expected_lines = [line.strip() for line in expectedOutput.strip().splitlines()]
+        if user_lines  != expected_lines:
+            return Result.Fail(programInput, "Неверно. Попробуйте ещё раз", code)
 
         return Result.Ok()

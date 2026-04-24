@@ -1,0 +1,6 @@
+services: 
+  build-prog-questions: 
+    build: .
+    volumes:
+      - ./src:/app/src:ro
+      - ./dist:/app/dist
