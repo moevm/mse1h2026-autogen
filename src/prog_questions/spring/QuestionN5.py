@@ -1,5 +1,5 @@
-from .QuestionBase import QuestionBase, Result
-from .utility import CProgramRunner, ExecutionError, CompilationError
+from ..QuestionBase import QuestionBase, Result
+from ..utility import CProgramRunner, ExecutionError, CompilationError
 import random
 import string
 import os
@@ -8,8 +8,8 @@ import tempfile
 import time
 
 
-class QuestionN6(QuestionBase):
-    questionName = 'Задание 6, Работа с файловой системой'
+class QuestionN5(QuestionBase):
+    questionName = 'Задание 5, Работа с файловой системой'
 
     # Возможные типы заданий
     TASK_DELETE_RENAME    = 'delete_rename'
@@ -135,7 +135,7 @@ class QuestionN6(QuestionBase):
                     message += f": {error_text}"
                 raise ExecutionError(message, run_result.returncode)
 
-            stdout_text = run_result.stdout.decode('utf-8').strip()
+            stdout_text = run_result.stdout.decode('utf-8').replace('\r\n', '\n').strip()
 
             # Читаем все файлы, которые остались в рабочей директории
             result_files = {}
