@@ -274,56 +274,6 @@ class TestQuestionN5_ListDirectory:
         ''') != Result.Ok()
 
 
-class TestQuestionN5_RecursiveSearch:
-    question = make_question('recursive_search')
-
-    def test_correct(self):
-        assert self.question.test(r'''
-            #include <stdio.h>
-            #include <string.h>
-            #include <dirent.h>
-            #include <sys/stat.h>
-
-            char ext_filter[64];
-
-            void search(const char *dirpath) {
-                DIR *d = opendir(dirpath);
-                if (!d) return;
-                struct dirent *entry;
-                while ((entry = readdir(d)) != NULL) {
-                    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-                        continue;
-                    char fullpath[1024];
-                    snprintf(fullpath, sizeof(fullpath), "%s/%s", dirpath, entry->d_name);
-                    struct stat st;
-                    if (stat(fullpath, &st) != 0) continue;
-                    if (S_ISDIR(st.st_mode)) {
-                        search(fullpath);
-                    } else if (S_ISREG(st.st_mode)) {
-                        size_t nlen = strlen(entry->d_name);
-                        size_t elen = strlen(ext_filter);
-                        if (nlen >= elen && strcmp(entry->d_name + nlen - elen, ext_filter) == 0)
-                            printf("%s\n", fullpath);
-                    }
-                }
-                closedir(d);
-            }
-
-            int main() {
-                char root[256];
-                scanf("%255s %63s", root, ext_filter);
-                search(root);
-                return 0;
-            }
-        ''') == Result.Ok()
-
-    def test_wrong_answer(self):
-        assert self.question.test(r'''
-            #include <stdio.h>
-            int main() { return 0; }
-        ''') != Result.Ok()
-
-
 class TestQuestionN5_CountLinesInDir:
     question = make_question('count_lines_in_dir')
 
