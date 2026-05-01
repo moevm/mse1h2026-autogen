@@ -288,14 +288,9 @@ class TestQuestionN5_CountLinesInDir:
     def test_correct(self):
         assert self.question.test(r'''
             #include <stdio.h>
-            #include <stdlib.h>
             #include <string.h>
             #include <dirent.h>
             #include <sys/stat.h>
-
-            int cmp(const void *a, const void *b) {
-                return strcmp(*(const char **)a, *(const char **)b);
-            }
 
             int count_newlines(const char *path) {
                 FILE *f = fopen(path, "r");
@@ -314,8 +309,6 @@ class TestQuestionN5_CountLinesInDir:
                 DIR *d = opendir(dirpath);
                 if (!d) return 1;
 
-                char *names[1024];
-                int count = 0;
                 struct dirent *entry;
                 while ((entry = readdir(d)) != NULL) {
                     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
@@ -324,17 +317,9 @@ class TestQuestionN5_CountLinesInDir:
                     snprintf(fullpath, sizeof(fullpath), "%s/%s", dirpath, entry->d_name);
                     struct stat st;
                     if (stat(fullpath, &st) == 0 && S_ISREG(st.st_mode))
-                        names[count++] = strdup(entry->d_name);
+                        printf("%s: %d\n", entry->d_name, count_newlines(fullpath));
                 }
                 closedir(d);
-                qsort(names, count, sizeof(char *), cmp);
-
-                for (int i = 0; i < count; i++) {
-                    char fullpath[512];
-                    snprintf(fullpath, sizeof(fullpath), "%s/%s", dirpath, names[i]);
-                    printf("%s: %d\n", names[i], count_newlines(fullpath));
-                    free(names[i]);
-                }
                 return 0;
             }
         ''') == Result.Ok()

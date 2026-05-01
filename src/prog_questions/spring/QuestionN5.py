@@ -362,7 +362,7 @@ class QuestionN5(QuestionBase):
         expected_stdout = '\n'.join(output_lines)
         stdin_data      = f"{dir_name}\n"
 
-        return stdin_data, initial_files, [dir_name], expected_stdout, {}, [], False
+        return stdin_data, initial_files, [dir_name], expected_stdout, {}, [], True
 
     def generateTest(self):
         """
@@ -546,8 +546,7 @@ class QuestionN5(QuestionBase):
             desc    = '''На вход подаётся имя директории.<br>
                 Для каждого обычного файла в ней (не рекурсивно) подсчитайте количество строк
                 (количество символов <code>\\n</code>).<br>
-                Выведите результаты в лексикографическом порядке по имени файла
-                в формате: <code>имя: количество</code>.<br>
+                Выведите результаты в формате: <code>имя: количество</code> (по одному на строку, порядок любой).<br>
                 Используйте <code>opendir</code>, <code>readdir</code>, <code>stat</code>,
                 <code>fgets</code>.'''
             ex_in   = './texts'
