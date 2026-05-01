@@ -29,12 +29,13 @@ class TestQuestionN5_DeleteRename:
         assert self.question.test(r'''
             #include <stdio.h>
             #include <stdlib.h>
+            #include <string.h>
 
             int main() {
                 char to_delete[256], old_name[256], new_name[256];
-                scanf("%255s", to_delete);
-                scanf("%255s", old_name);
-                scanf("%255s", new_name);
+                fgets(to_delete, sizeof(to_delete), stdin); to_delete[strcspn(to_delete, "\n")] = '\0';
+                fgets(old_name, sizeof(old_name), stdin); old_name[strcspn(old_name, "\n")] = '\0';
+                fgets(new_name, sizeof(new_name), stdin); new_name[strcspn(new_name, "\n")] = '\0';
                 printf("%s\n", remove(to_delete) == 0 ? "ok" : "error");
                 printf("%s\n", rename(old_name, new_name) == 0 ? "ok" : "error");
                 return 0;
@@ -60,12 +61,14 @@ class TestQuestionN5_ReadHex:
             #include <stdio.h>
             #include <stdint.h>
             #include <stdlib.h>
+            #include <string.h>
 
             int main() {
                 char filename[256];
                 long offset;
                 int n, group_size;
-                scanf("%255s %ld %d %d", filename, &offset, &n, &group_size);
+                fgets(filename, sizeof(filename), stdin); filename[strcspn(filename, "\n")] = '\0';
+                scanf("%ld %d %d", &offset, &n, &group_size);
                 FILE *f = fopen(filename, "rb");
                 if (!f) { fprintf(stderr, "open error\n"); return 1; }
                 fseek(f, offset, SEEK_SET);
@@ -114,7 +117,9 @@ class TestQuestionN5_OverwriteBytes:
                 char filename[256];
                 long offset;
                 char data[256];
-                scanf("%255s %ld %255s", filename, &offset, data);
+                fgets(filename, sizeof(filename), stdin); filename[strcspn(filename, "\n")] = '\0';
+                scanf("%ld", &offset); getchar();
+                fgets(data, sizeof(data), stdin); data[strcspn(data, "\n")] = '\0';
                 FILE *f = fopen(filename, "r+b");
                 if (!f) return 1;
                 fseek(f, offset, SEEK_SET);
@@ -137,10 +142,11 @@ class TestQuestionN5_FileStats:
     def test_correct(self):
         assert self.question.test(r'''
             #include <stdio.h>
+            #include <string.h>
 
             int main() {
                 char filename[256];
-                scanf("%255s", filename);
+                fgets(filename, sizeof(filename), stdin); filename[strcspn(filename, "\n")] = '\0';
 
                 FILE *f = fopen(filename, "r");
                 if (!f) return 1;
@@ -183,10 +189,12 @@ class TestQuestionN5_MergeFiles:
         assert self.question.test(r'''
             #include <stdio.h>
             #include <stdlib.h>
+            #include <string.h>
 
             int main() {
                 char src[256], dst[256];
-                scanf("%255s %255s", src, dst);
+                fgets(src, sizeof(src), stdin); src[strcspn(src, "\n")] = '\0';
+                fgets(dst, sizeof(dst), stdin); dst[strcspn(dst, "\n")] = '\0';
 
                 FILE *fsrc = fopen(src, "rb");
                 FILE *fdst = fopen(dst, "ab");
@@ -234,7 +242,7 @@ class TestQuestionN5_ListDirectory:
 
             int main() {
                 char dirpath[256];
-                scanf("%255s", dirpath);
+                fgets(dirpath, sizeof(dirpath), stdin); dirpath[strcspn(dirpath, "\n")] = '\0';
 
                 DIR *d = opendir(dirpath);
                 if (!d) return 1;
@@ -301,7 +309,7 @@ class TestQuestionN5_CountLinesInDir:
 
             int main() {
                 char dirpath[256];
-                scanf("%255s", dirpath);
+                fgets(dirpath, sizeof(dirpath), stdin); dirpath[strcspn(dirpath, "\n")] = '\0';
 
                 DIR *d = opendir(dirpath);
                 if (!d) return 1;
