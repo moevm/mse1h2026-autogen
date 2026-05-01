@@ -263,9 +263,10 @@ class TestQuestionN5_ListDirectory:
                     char fullpath[512];
                     snprintf(fullpath, sizeof(fullpath), "%s/%s", dirpath, names[i]);
                     struct stat st;
-                    stat(fullpath, &st);
+                    lstat(fullpath, &st);
                     const char *type;
-                    if (S_ISREG(st.st_mode))       type = "file";
+                    if (S_ISLNK(st.st_mode))       type = "link";
+                    else if (S_ISREG(st.st_mode))  type = "file";
                     else if (S_ISDIR(st.st_mode))  type = "dir";
                     else                            type = "link";
                     printf("%s [%s]\n", names[i], type);

@@ -5,7 +5,6 @@ import string
 import os
 import subprocess
 import tempfile
-import time
 
 
 class QuestionN5(QuestionBase):
@@ -87,11 +86,11 @@ class QuestionN5(QuestionBase):
         content = '\n'.join(lines) + '\n'
         return content
 
-    def _run_program_with_files(self, abs_exec_path, stdin_data, initial_files, initial_dirs=None, timeout=5):
+    def _run_program_with_files(self, abs_exec_path, stdin_data, initial_files, initial_dirs=None, initial_symlinks=None, timeout=5):
         """
         Запускает скомпилированную программу в изолированной временной директории.
 
-        Перед запуском создаёт все нужные файлы и директории.
+        Перед запуском создаёт все нужные файлы, директории и симлинки.
         После запуска собирает содержимое всех файлов в словарь.
 
         Возвращает кортеж (stdout_строка, словарь_файлов_после_запуска).
@@ -116,6 +115,12 @@ class QuestionN5(QuestionBase):
                 else:
                     with open(full_path, 'w') as f:
                         f.write(content)
+
+            # Создаём симлинки: ключ — путь к ссылке, значение — цель (относительная)
+            if initial_symlinks:
+                for link_path, target in initial_symlinks.items():
+                    full_link = os.path.join(work_dir, link_path)
+                    os.symlink(target, full_link)
 
             # Запускаем программу
             run_result = subprocess.run(
@@ -318,12 +323,19 @@ class QuestionN5(QuestionBase):
 
         initial_dirs = [dir_name] + [f"{dir_name}/{sd}" for sd in sub_dirs]
 
+        # Добавляем один симлинк, указывающий на первый файл
+        link_name = f"link_{random.randint(1000, 9999)}"
+        initial_symlinks = {f"{dir_name}/{link_name}": file_names[0]}
+
         # Ожидаемый вывод: все записи отсортированы, с типом
-        all_entries = sorted(file_names + sub_dirs)
+        all_entries = sorted(file_names + sub_dirs + [link_name])
         file_set    = set(file_names)
+        link_set    = {link_name}
         output_lines = []
         for entry in all_entries:
-            if entry in file_set:
+            if entry in link_set:
+                output_lines.append(f"{entry} [link]")
+            elif entry in file_set:
                 output_lines.append(f"{entry} [file]")
             else:
                 output_lines.append(f"{entry} [dir]")
@@ -331,7 +343,7 @@ class QuestionN5(QuestionBase):
         expected_stdout = '\n'.join(output_lines)
         stdin_data      = f"{dir_name}\n"
 
-        return stdin_data, initial_files, initial_dirs, expected_stdout, {}, [], False
+        return stdin_data, initial_files, initial_dirs, expected_stdout, {}, [], False, initial_symlinks
 
     def _generate_count_lines_test(self):
         """
@@ -392,12 +404,13 @@ class QuestionN5(QuestionBase):
         Запускает один тестовый случай и возвращает Result.Fail при несоответствии,
         или None если всё в порядке.
         """
-        stdin_data, initial_files, initial_dirs, expected_stdout, expected_files, must_not_exist, sort_output = test_data
+        stdin_data, initial_files, initial_dirs, expected_stdout, expected_files, must_not_exist, sort_output, *rest = test_data
+        initial_symlinks = rest[0] if rest else {}
 
         # Запускаем программу
         try:
             actual_stdout, result_files = self._run_program_with_files(
-                abs_exec_path, stdin_data, initial_files, initial_dirs
+                abs_exec_path, stdin_data, initial_files, initial_dirs, initial_symlinks
             )
         except ExecutionError as e:
             return Result.Fail(stdin_data, expected_stdout or '', str(e))
@@ -457,8 +470,8 @@ class QuestionN5(QuestionBase):
             if fail is not None:
                 return fail
 
-        # Затем случайные тесты для дополнительной проверки
-        random.seed(int(time.time()))
+        # Затем дополнительные тесты с другим сидом для расширения покрытия
+        random.seed(self.seed + 1)
         for _ in range(self.RANDOM_TESTS_COUNT):
             fail = self._check_test_case(abs_exec, self.generateTest())
             if fail is not None:
@@ -536,7 +549,9 @@ class QuestionN5(QuestionBase):
                 в лексикографическом порядке, по одной на строку в формате:
                 <code>имя [тип]</code>, где тип — <code>file</code>, <code>dir</code>
                 или <code>link</code>.<br>
-                Используйте <code>opendir</code>, <code>readdir</code>, <code>stat</code>.'''
+                Для определения типа используйте <code>lstat</code> (не <code>stat</code>) —
+                она не разыменовывает символические ссылки.<br>
+                Используйте <code>opendir</code>, <code>readdir</code>, <code>lstat</code>.'''
             ex_in   = './mydir'
             ex_out  = 'notes.txt [file]\nreport.md [file]\nsrc [dir]'
 
