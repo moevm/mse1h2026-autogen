@@ -100,7 +100,7 @@ if __name__ == '__main__':
     # Шаблоны кода, внедряемого в xml-файл
     parameters_code_template = r'''import sys
 sys.path.insert(0, 'bundle.zip')
-from prog_questions import {class_name}
+from {module_path} import {class_name}
 
 question = {constructor_code}
 print(question.getTemplateParameters())
@@ -108,7 +108,7 @@ print(question.getTemplateParameters())
 
     code_template = r'''import sys
 sys.path.insert(0, 'bundle.zip')
-from prog_questions import {class_name}
+from {module_path} import {class_name}
 
 question = {class_name}.initWithParameters("""{{{{ PARAMETERS | e('py') }}}}""")
 print(question.runTest("""{{{{ STUDENT_ANSWER | e('py') }}}}"""))
@@ -123,6 +123,10 @@ print(question.runTest("""{{{{ STUDENT_ANSWER | e('py') }}}}"""))
         # Если в файле нет класса задачи - пропускаем
         if question_class is None:
             continue
+
+        # Вычисляем путь модуля из расположения файла (например, prog_questions.spring)
+        rel_path = file.relative_to(SOURCE_PATH)
+        module_path = '.'.join(rel_path.parent.parts)
 
         # Конвертация узла arguments в массив keyword
         keywords = [ast.keyword(arg='seed', value=ast.Constant(value=Ellipsis))]
@@ -140,19 +144,22 @@ print(question.runTest("""{{{{ STUDENT_ANSWER | e('py') }}}}"""))
         constructor_code = astor.to_source(call_node).rstrip()
 
         # Подстановка в шаблоны кода
-        parameters_code = parameters_code_template.format(class_name=question_class, constructor_code=constructor_code).lstrip()
-        code = code_template.format(class_name=question_class).lstrip()
+        parameters_code = parameters_code_template.format(module_path=module_path, class_name=question_class, constructor_code=constructor_code).lstrip()
+        code = code_template.format(module_path=module_path, class_name=question_class).lstrip()
 
         # Модификация xml-шаблона
         xml_template.xpath('//question/name/text')[0].text = xml.CDATA(question_name)
         xml_template.xpath('//templateparams')[0].text = xml.CDATA(parameters_code)
         xml_template.xpath('//template')[0].text = xml.CDATA(code)
 
-        # Запись в файл и вывод в консоль
-        xml_output_path = OUTPUT_PATH / f'{question_class}.xml'
+        # Путь вывода: подпакеты (кроме prog_questions) становятся подпапками dist/
+        sub_path = rel_path.parent.relative_to('prog_questions')
+        xml_output_dir = OUTPUT_PATH / sub_path
+        xml_output_dir.mkdir(parents=True, exist_ok=True)
+        xml_output_path = xml_output_dir / f'{question_class}.xml'
         xml_template.write(xml_output_path, xml_declaration=True, encoding='utf-8')
 
     # Вывод информации о собранных задачах
     print("Задачи успешно собраны:")
-    for built_file in OUTPUT_PATH.glob('*.xml'):
-        print(built_file.name)
+    for built_file in sorted(OUTPUT_PATH.glob('**/*.xml')):
+        print(built_file.relative_to(OUTPUT_PATH))
