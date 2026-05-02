@@ -1,6 +1,6 @@
 from .QuestionBase import QuestionBase, Result
 from .utility import CProgramRunner, ExecutionError
-from riscv_course.random_expressions.random_expressions import get_expression
+from .utility.RandomExpression import get_expression # генерация выражения и тестов для задачи (без risc-v)
 import random
 
 PRELOADED_CODE = '''#include <stdio.h>
