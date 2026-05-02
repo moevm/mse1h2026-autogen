@@ -193,10 +193,10 @@ class TestQuestionN1UrlPath(BaseTestQuestionN1):
     sub_variant = 'path'
 
     invalid_seed = 241
-    invalid_regex = r'^https?://[unclosed'
+    invalid_regex = r'^[a-z]+://[unclosed'
 
     success_seed = 241
-    correct_regex = (r'^https?://[^/[:space:]]+(/[[:graph:]]*)')
+    correct_regex = r'^[a-z]+://[^/[:space:]]+(/[[:graph:]]*)'
 
     def setup_method(self):
         self.question.variant = 'url_path'
@@ -208,7 +208,7 @@ class TestQuestionN1UrlPath(BaseTestQuestionN1):
         q.variant = 'url_path'
         q.sub_variant = 'path'
 
-        assert q.test(r'^(https?://[^[:space:]]+)') != Result.Ok()
+        assert q.test(r'^([a-z]+://[^[:space:]]+)') != Result.Ok()
 
     # Некорректное решение - выводит схему и домен
     def test_code_wrong_answer_outputs_url_without_path(self):
@@ -216,4 +216,4 @@ class TestQuestionN1UrlPath(BaseTestQuestionN1):
         q.variant = 'url_path'
         q.sub_variant = 'path'
 
-        assert q.test(r'^(https?://[^/[:space:]]+/[^[:space:]]*)') != Result.Ok()
+        assert q.test(r'^([a-z]+://[^/[:space:]]+/[^[:space:]]*)') != Result.Ok()
