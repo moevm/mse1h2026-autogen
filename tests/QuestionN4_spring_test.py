@@ -1,11 +1,11 @@
-from prog_questions.spring.QuestionN4 import Question4, CppProgramRunner, Task41, Task42, Task43
+from prog_questions.spring.QuestionN4 import QuestionN4, CppProgramRunner, Task41, Task42, Task43
 from prog_questions import Result, utility
 from utility import moodleInit
 import pytest
 
 class TestQuestion4:
     def setup_method(self):
-        self.question = Question4(seed=42, strictness=0.5)
+        self.question = QuestionN4(seed=42, strictness=0.5)
 
     def test_preloaded_code_compiles(self):
         """Проверка, что шаблон кода компилируется"""
@@ -13,7 +13,7 @@ class TestQuestion4:
 
     def test_task_41_basic(self):
         """Тест задания 4.1 с фиксированным seed"""
-        q = moodleInit(Question4, seed=100, strictness=0.3)
+        q = moodleInit(QuestionN4, seed=100, strictness=0.3)
         q.task_type = '4.1'
         q.task = Task41(seed=100, strictness=0.3)
         
@@ -50,7 +50,7 @@ int main() {
 
     def test_task_42_basic(self):
         """Тест задания 4.2 с фиксированным seed"""
-        q = moodleInit(Question4, seed=200, strictness=0.3)
+        q = moodleInit(QuestionN4, seed=200, strictness=0.3)
         q.task_type = '4.2'
         q.task = Task42(seed=200, strictness=0.3)
         q.task.mask = 0x05
@@ -91,7 +91,7 @@ int main() {{
 
     def test_task_43_basic(self):
         """Тест задания 4.3 с фиксированным seed"""
-        q = moodleInit(Question4, seed=300, strictness=0.3)
+        q = moodleInit(QuestionN4, seed=300, strictness=0.3)
         q.task_type = '4.3'
         q.task = Task43(seed=300, strictness=0.3)
         
@@ -141,7 +141,7 @@ int main() { std::cout << "missing semicolon" return 0; }'''
         """Проверка, что все три типа заданий могут быть выбраны"""
         types_seen = set()
         for seed in range(1, 50):
-            q = moodleInit(Question4, seed=seed, strictness=0.5)
+            q = moodleInit(QuestionN4, seed=seed, strictness=0.5)
             types_seen.add(q.task_type)
             if len(types_seen) == 3:
                 break

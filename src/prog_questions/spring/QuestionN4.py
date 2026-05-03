@@ -1,5 +1,5 @@
-from prog_questions.QuestionBase import QuestionBase, Result
-from prog_questions.utility.CProgramRunner import CProgramRunner, CompilationError, ExecutionError, InternalError
+from ..QuestionBase import QuestionBase, Result
+from ..utility import CProgramRunner, CompilationError, ExecutionError, InternalError
 import random
 from textwrap import dedent
 import subprocess
@@ -324,7 +324,7 @@ int main() {
 
 
 # рандомный выбор задания
-class Question4(QuestionBase):
+class QuestionN4(QuestionBase):
     questionName = "Задание 4. Алгоритмические задачи с map/set"
 
     def __init__(self, *, seed: int, strictness: float = 0.7):
