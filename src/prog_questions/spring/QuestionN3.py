@@ -1,11 +1,14 @@
 from ..QuestionBase import QuestionBase, Result
 from ..utility import CProgramRunner, ExecutionError, CompilationError, InternalError
 import random
-import time
 import re
 import os
 import subprocess
 import sys
+
+NUM_RANDOM_TESTS = 30
+OP_BUFFER_SIZE = 16
+EXAMPLE_SEED_XOR = 0x123456
 
 class CppProgramRunner(CProgramRunner):
     """Раннер для C++"""
@@ -88,22 +91,8 @@ class QuestionN3(QuestionBase):
             'template': 'T',
         }[self.elementType]
 
-    #  Тестовый main(), приклеиваемый к коду студента
-    def _make_test_harness(self) -> str:
-        """
-        Генерирует main(), который читает операции из stdin и вызывает методы класса.
-        Формат stdin:
-            N
-            push <val>  |  pop  |  top/front  |  isEmpty
-        Вывод: строки с результатами top/front и isEmpty.
-
-          - template  Stack<int> / Queue<int>  (шаблон проверяем через int)
-          - int       Stack / Queue            (конкретный класс, без угловых скобок)
-          - double    Stack / Queue            (аналогично)
-
-        Для limitedVariant используем Limited-класс.
-        """
-        used_cls    = self.containerType
+    def _make_harness(self, use_limited: bool = False) -> str:
+        used_cls  = f'Limited{self.containerType}' if use_limited else self.containerType
         access = self.accessMethod
 
         if self.elementType == 'template':
@@ -128,7 +117,7 @@ int main() {{
     scanf("%d", &n);
     {instance}
     for (int i = 0; i < n; i++) {{
-        char op[16];
+        char op[{OP_BUFFER_SIZE}];
         scanf("%s", op);
         if (strcmp(op, "push") == 0) {{
             {read_val}
@@ -144,7 +133,7 @@ int main() {{
     return 0;
 }}
 """
-    
+
     def _generate_value(self):
         if self.elementType == 'double':
             return round(random.uniform(-1000.0, 1000.0), 6)
@@ -152,10 +141,6 @@ int main() {{
             return random.randint(-100000, 100000)
 
     def _simulate(self, ops: list) -> list:
-        """
-        Симулирует контейнер на Python, возвращает список строк вывода.
-        Для limitedVariant учитывает лимит и overflowBehavior
-        """
         container = []
         output = []
         limit = self.limitSize if self.limitedVariant else None
@@ -190,11 +175,6 @@ int main() {{
         return output
 
     def generateTest(self) -> tuple:
-        """
-        Генерирует случайную последовательность операций.
-        Для limitedVariant намеренно проверяет поведение на границе лимита.
-        Возвращает (programInput, expectedOutput)
-        """
         ops = []
         size = 0
         limit = self.limitSize if self.limitedVariant else 50
@@ -233,14 +213,29 @@ int main() {{
         programInput   = '\n'.join(lines)
         expectedOutput = '\n'.join(self._simulate(ops))
         return programInput, expectedOutput
-    
+
     def _static_checks(self, code: str) -> str | None:
-        """Возвращает сообщение об ошибке или None если всё ок."""
+        code_clean = re.sub(
+            r'//.*?$|/\*.*?\*/|"[^"]*"',
+            '',
+            code,
+            flags=re.MULTILINE | re.DOTALL
+        )
+
         for pattern, message in self.FORBIDDEN_PATTERNS:
-            if re.search(pattern, code):
+            if re.search(pattern, code_clean):
                 return message
-        if not re.search(r'\bnew\b', code):
+
+        if not re.search(r'\bnew\b', code_clean):
             return 'Необходимо использовать динамическое выделение памяти (оператор new).'
+
+        if self.implType == 'list':
+            if not re.search(r'\b(next|Node|node)\b', code_clean):
+                return 'Требуется реализация на односвязном списке.'
+        elif self.implType == 'array':
+            if not re.search(r'(\[\s*\d*\s*\]|capacity|size|head|tail)', code_clean):
+                return 'Требуется реализация на динамическом массиве.'
+
         return None
 
     @property
@@ -262,7 +257,7 @@ int main() {{
             type_str  = 'T'
 
         saved_state = random.getstate()
-        random.seed(self.seed ^ 0x123456)
+        random.seed(self.seed ^ EXAMPLE_SEED_XOR)
         example_input, example_output = self.generateTest()
         random.setstate(saved_state)
 
@@ -381,59 +376,12 @@ int main() {{
 
         return base_class + limited_class
 
-    def _make_limited_harness(self) -> str:
-        """
-        Используется только при limitedVariant=True.
-        """
-        cls    = self.containerType
-        access = self.accessMethod
-        used_cls = f'Limited{cls}'
-
-        if self.elementType == 'template':
-            instance     = f'{used_cls}<int> c;'
-            read_val     = 'int val; scanf("%d", &val);'
-            print_access = f'printf("%d\\n", c.{access}());'
-        elif self.elementType == 'double':
-            instance     = f'{used_cls} c;'
-            read_val     = 'double val; scanf("%lf", &val);'
-            print_access = f'printf("%.6f\\n", c.{access}());'
-        else:
-            instance     = f'{used_cls} c;'
-            read_val     = 'int val; scanf("%d", &val);'
-            print_access = f'printf("%d\\n", c.{access}());'
-
-        return f"""
-#include <cstdio>
-#include <cstring>
-
-int main() {{
-    int n;
-    scanf("%d", &n);
-    {instance}
-    for (int i = 0; i < n; i++) {{
-        char op[16];
-        scanf("%s", op);
-        if (strcmp(op, "push") == 0) {{
-            {read_val}
-            c.push(val);
-        }} else if (strcmp(op, "pop") == 0) {{
-            c.pop();
-        }} else if (strcmp(op, "{access}") == 0) {{
-            {print_access}
-        }} else if (strcmp(op, "isEmpty") == 0) {{
-            printf("%d\\n", c.isEmpty() ? 1 : 0);
-        }}
-    }}
-    return 0;
-}}
-"""
-
     def _run_tests(self, program, use_limited: bool) -> 'Result.Ok | Result.Fail':
         orig = self.limitedVariant
         self.limitedVariant = use_limited
 
         random.seed(self.seed)
-        for i in range(30):
+        for i in range(NUM_RANDOM_TESTS):
             programInput, expectedOutput = self.generateTest()
             try:
                 result = program.run(programInput)
@@ -454,37 +402,42 @@ int main() {{
         if error_msg:
             return Result.Fail('', '', error_msg)
 
-        base_code = code + '\n' + self._make_test_harness()
+        base_code = code + '\n' + self._make_harness()
         base_program = CppProgramRunner(base_code)
         result = self._run_tests(base_program, use_limited=False)
         if result != Result.Ok():
             return result
 
         if self.limitedVariant:
-            limited_code = code + '\n' + self._make_limited_harness()
+            limited_code = code + '\n' + self._make_harness(use_limited=True)
             limited_program = CppProgramRunner(limited_code)
 
             over_limit = self.limitSize + 5
-
-            ops_count = over_limit + 1
+            ops_count  = over_limit + 1
 
             lines = [str(ops_count)]
             for i in range(over_limit):
-                lines.append(f'push {i}')
+                if self.elementType == 'double':
+                    lines.append(f'push {float(i):.6f}')
+                else:
+                    lines.append(f'push {i}')
             lines.append(self.accessMethod)
 
-            programInput = '\n'.join(lines)  
+            programInput = '\n'.join(lines)
+
+            def _fmt(val: int) -> str:
+                return f'{float(val):.6f}' if self.elementType == 'double' else str(val)
 
             if self.overflowBehavior == 'ignore':
                 if self.containerType == 'Stack':
-                    expected = str(self.limitSize - 1)
+                    expected = _fmt(self.limitSize - 1)
                 else:
-                    expected = '0'
+                    expected = _fmt(0)
             else:
                 if self.containerType == 'Stack':
-                    expected = str(over_limit - 1)
+                    expected = _fmt(over_limit - 1)
                 else:
-                    expected = str(over_limit - self.limitSize)
+                    expected = _fmt(over_limit - self.limitSize)
 
             try:
                 result = limited_program.run(programInput).strip()
