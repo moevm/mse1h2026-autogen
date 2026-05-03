@@ -99,24 +99,20 @@ class QuestionN2(QuestionBase):
             return head
         if i > j:
             i, j = j, i
-
-        # Поиск узлов и их предков
+        # поиск узлов и их предков
         prev_i = None
         node_i = head
         for _ in range(1, i):
             prev_i = node_i
             node_i = node_i.next
-
         prev_j = None
         node_j = head
         for _ in range(1, j):
             prev_j = node_j
             node_j = node_j.next
-
         if not node_i or not node_j:
             return head
-
-        # Особый случай: соседние узлы (i+1 == j)
+        # особый случай: соседние узлы (i+1 == j)
         if node_i.next is node_j:
             if prev_i:
                 prev_i.next = node_j
@@ -136,7 +132,6 @@ class QuestionN2(QuestionBase):
                 head = node_i
             node_i.next = next_j
             node_j.next = next_i
-
         return head
 
     @staticmethod
@@ -170,7 +165,6 @@ class QuestionN2(QuestionBase):
             shifted = values[-k:] + values[:-k]
         else:  # left
             shifted = values[k:] + values[:k]
-
         return QuestionN2._build_singly(shifted)
 
     @staticmethod
@@ -179,16 +173,35 @@ class QuestionN2(QuestionBase):
         Обмен узлами между двумя односвязными списками
         Возвращает кортеж (new_head1, new_head2)
         """
-        def _get_node(head, pos):
-            current = head
-            for _ in range(1, pos):
-                if current:
-                    current = current.next
-            return current
-        node1 = _get_node(head1, pos1)
-        node2 = _get_node(head2, pos2)
-        if node1 and node2:
-            node1.data, node2.data = node2.data, node1.data
+        if not head1 or not head2:
+            return head1, head2
+        # поиск node1 и prev1 в списке 1
+        prev1 = None
+        node1 = head1
+        for _ in range(1, pos1):
+            if node1:
+                prev1 = node1
+                node1 = node1.next
+        # поиск node2 и prev2 в списке 2
+        prev2 = None
+        node2 = head2
+        for _ in range(1, pos2):
+            if node2:
+                prev2 = node2
+                node2 = node2.next
+        if not node1 or not node2:
+            return head1, head2
+        next1, next2 = node1.next, node2.next
+        if prev1:
+            prev1.next = node2
+        else:
+            head1 = node2  # node2 становится новой головой списка 1
+        node2.next = next1
+        if prev2:
+            prev2.next = node1
+        else:
+            head2 = node1  # node1 становится новой головой списка 2
+        node1.next = next2
         return head1, head2
 
     @staticmethod
@@ -537,6 +550,14 @@ int main() {
         elif test_num == 4:  # обмен головы/хвоста
             if self.task_id == '1' and self.list_length >= 2:
                 self.pos_i, self.pos_j = 1, self.list_length
+                
+        elif test_num == 5:  # обмен головы и второго элемента
+            if self.task_id == '1' and self.list_length >= 2:
+                self.pos_i, self.pos_j = 1, 2
+
+        elif test_num == 6:  # обмен предпоследнего и хвоста
+            if self.task_id == '1' and self.list_length >= 2:
+                self.pos_i, self.pos_j = self.list_length - 1, self.list_length
 
     def test(self, code: str) -> Result.Ok | Result.Fail:
         try:
@@ -545,7 +566,11 @@ int main() {
             raise
 
         min_tests, max_tests = 5, 25
-        num_tests = int(min_tests + self.strictness * (max_tests - min_tests))
+        num_edge_cases = 7
+        num_tests = max(
+            int(min_tests + self.strictness * (max_tests - min_tests)),
+            num_edge_cases
+        )
 
         for test_num in range(num_tests):
             # Воспроизводимая рандомизация
@@ -553,7 +578,7 @@ int main() {
             self._generate_task_parameters()
 
             # Применяем крайние случаи на первых итерациях
-            if test_num < 5:
+            if test_num < num_edge_cases:
                 self._generate_edge_case(test_num)
 
             # Генерация теста
