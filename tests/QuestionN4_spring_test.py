@@ -53,38 +53,40 @@ int main() {
         q = moodleInit(Question4, seed=200, strictness=0.3)
         q.task_type = '4.2'
         q.task = Task42(seed=200, strictness=0.3)
+        q.task.mask = 0x05
+        q.task.operation = 'shift'
         
-        solution = '''#include <iostream>
+        solution = f'''#include <iostream>
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
 
-int main() {
+int main() {{
     std::unordered_map<int, int> freq;
     int num;
-    const int mask = 0x05;
+    const int mask = 0x{q.task.mask:02X};
     
-    while (std::cin >> num && num != 0) {
+    while (std::cin >> num && num != 0) {{
         freq[num]++;
-    }
+    }}
     
     std::vector<std::tuple<int,int,int>> results;
-    for (auto& [n, c] : freq) {
-        if (c >= 2 && (n & mask) == mask) {
+    for (auto& [n, c] : freq) {{
+        if (c >= 2 && (n & mask) == mask) {{
             results.emplace_back(n, c, n << c);
-        }
-    }
+        }}
+    }}
     std::sort(results.begin(), results.end());
     
-    if (results.empty()) {
+    if (results.empty()) {{
         std::cout << "NO_DATA";
-    } else {
-        for (auto& [n, c, r] : results) {
+    }} else {{
+        for (auto& [n, c, r] : results) {{
             std::cout << n << " " << c << " " << r << "\\n";
-        }
-    }
+        }}
+    }}
     return 0;
-}'''
+}}'''
         assert q.test(solution) == Result.Ok()
 
     def test_task_43_basic(self):

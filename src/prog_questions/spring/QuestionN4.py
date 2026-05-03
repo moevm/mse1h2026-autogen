@@ -5,10 +5,9 @@ from textwrap import dedent
 import subprocess
 import os
 import sys
+from collections import defaultdict, Counter
 
-# =============================================================================
-# ЛОКАЛЬНЫЙ РАННЕР ТОЛЬКО ДЛЯ ЗАДАНИЯ 4
-# =============================================================================
+# раннер с++
 class CppProgramRunner(CProgramRunner):
     """Переопределяет только компиляцию для C++. Остальное наследуется от базового раннера."""
     def _compile(self) -> str:
@@ -41,9 +40,7 @@ class CppProgramRunner(CProgramRunner):
         except Exception as e:
             raise InternalError(f"Internal compilation error: {e}")
 
-# =============================================================================
-# ЗАДАНИЕ 4.1: Группировка по ключу
-# =============================================================================
+# 4.1 Группировка по ключу
 class Task41:
     def __init__(self, seed: int, strictness: float):
         random.seed(seed)
@@ -85,7 +82,6 @@ class Task41:
         return ' '.join(self.input_words) + ' #'
 
     def generate_expected_output(self) -> str:
-        from collections import defaultdict
         groups = defaultdict(list)
         for w in self.input_words:
             if w:
@@ -116,25 +112,15 @@ class Task41:
 <p>Слова через пробел, окончание ввода: <code>#</code></p>
 <h4>Формат вывода</h4>
 <p><code>&lt;буква&gt;: &lt;слово1&gt; &lt;слово2&gt; ...</code>, группы отсортированы по букве.</p>
+<p><i>Если после фильтрации не осталось ни одного числа, выведите <code>NO_DATA</code>.</i></p>
 """
         return dedent(base)
 
     @property
     def preloaded_code(self) -> str:
         return """#include <iostream>
-#include <map>
-#include <vector>
-#include <string>
-#include <algorithm>
-
 int main() {
-    std::map<char, std::vector<std::string>> groups;
-    std::string word;
-    
-    // TODO: считывайте слова до '#' и группируйте по первой букве
-    // TODO: примените дополнительное условие из текста задачи
-    // TODO: выведите результат в требуемом формате
-    
+    // Ваш код
     return 0;
 }
 """
@@ -154,9 +140,7 @@ int main() {
         return Result.Fail(input_data, expected, output)
 
 
-# =============================================================================
-# ЗАДАНИЕ 4.2: Частотный фильтр с маской
-# =============================================================================
+# 4.2 Частотный фильтр с маской
 class Task42:
     def __init__(self, seed: int, strictness: float):
         random.seed(seed)
@@ -188,7 +172,6 @@ class Task42:
         return ' '.join(map(str, self.numbers)) + ' 0'
 
     def generate_expected_output(self) -> str:
-        from collections import Counter
         freq = Counter(self.numbers)
         
         results = []
@@ -227,29 +210,17 @@ class Task42:
 <p>Числа через пробел, окончание: <code>0</code> (не обрабатывается)</p>
 <h4>Формат вывода</h4>
 <p><code>&lt;число&gt; &lt;частота&gt; &lt;результат&gt;</code>, отсортировано по возрастанию числа.</p>
+<p><i>Если после фильтрации не осталось ни одного числа, выведите <code>NO_DATA</code>.</i></p>
 """
         return dedent(base)
 
     @property
     def preloaded_code(self) -> str:
-        # Используем f-строку для вставки переменных, а код в {{ }} остаётся как есть
-        op_symbol = "<<" if self.operation == 'shift' else "&"
-        return f"""#include <iostream>
-#include <unordered_map>
-#include <vector>
-#include <algorithm>
-
-int main() {{
-    std::unordered_map<int, int> freq;
-    int num;
-    const int mask = 0x{self.mask:02X};
-    
-    // TODO: считывайте числа до 0, считайте частоты
-    // Проверка: (num & mask) == mask
-    // Вычисление: result = num {op_symbol} count
-    
+        return """#include <iostream>
+int main() {
+    // Ваш код
     return 0;
-}}
+}
 """
 
     def test(self, code: str) -> Result.Ok | Result.Fail:
@@ -267,9 +238,7 @@ int main() {{
         return Result.Fail(input_data, expected, output)
 
 
-# =============================================================================
-# ЗАДАНИЕ 4.3: Динамический учёт слов
-# =============================================================================
+# 4.3 Динамический учёт слов
 class Task43:
     def __init__(self, seed: int, strictness: float):
         random.seed(seed)
@@ -333,31 +302,8 @@ class Task43:
     @property
     def preloaded_code(self) -> str:
         return """#include <iostream>
-#include <string>
-#include <unordered_map>
-
 int main() {
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-    
-    int n;
-    std::cin >> n;
-    
-    std::unordered_map<std::string, int> counters;
-    
-    for (int i = 0; i < n; ++i) {
-        std::string cmd, word;
-        std::cin >> cmd >> word;
-        
-        if (cmd == "ADD") {
-            // TODO: увеличьте счётчик
-        } else if (cmd == "SUB") {
-            // TODO: уменьшите, если > 0
-        } else if (cmd == "GET") {
-            // TODO: выведите счётчик
-        }
-    }
-    
+    // Ваш код
     return 0;
 }
 """
@@ -377,9 +323,7 @@ int main() {
         return Result.Fail(input_data, expected, output)
 
 
-# =============================================================================
-# ОСНОВНОЙ КЛАСС: рандомный выбор задания
-# =============================================================================
+# рандомный выбор задания
 class Question4(QuestionBase):
     questionName = "Задание 4. Алгоритмические задачи с map/set"
 
@@ -399,7 +343,7 @@ class Question4(QuestionBase):
 
     @property
     def questionText(self) -> str:
-        header = f"<p style='color: #666; font-size: 0.9em;'>Вариант задания: <b>{self.task_type}</b> (seed: {self.seed})</p>"
+        header = f"<p style='color: #666; font-size: 0.9em;'>Вариант задания: <b>{self.task_type}</b></p>"
         return header + self.task.question_text
 
     @property
