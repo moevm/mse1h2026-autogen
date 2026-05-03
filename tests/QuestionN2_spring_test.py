@@ -91,40 +91,68 @@ class TestQuestionN2_Singly:
         assert self.question.test(code) == Result.Ok()
 
     def test_cyclic_shift_success(self):
-        """Задание 4: циклический сдвиг"""
+        """Задание 4: циклический сдвиг (через односвязный список, без зацикливания)"""
         self.question.task_id = '4'
         self.question._generate_task_parameters()
         code = r'''
             #include <stdio.h>
             #include <stdlib.h>
+
+            typedef struct Node {
+                int data;
+                struct Node* next;
+            } Node;
+
             int main() {
                 int n, k, dir;
                 if (scanf("%d", &n) != 1) return 1;
-                int* arr = (int*)malloc(n * sizeof(int));
-                for (int i = 0; i < n; i++) scanf("%d", &arr[i]);
-                scanf("%d %d", &k, &dir);
-                if (n > 0) {
-                    k %= n;
-                    if (k != 0) {
-                        int* tmp = (int*)malloc(k * sizeof(int));
-                        if (dir == 1) { // right
-                            for (int i = 0; i < k; i++) tmp[i] = arr[n - k + i];
-                            for (int i = n - 1; i >= k; i--) arr[i] = arr[i - k];
-                            for (int i = 0; i < k; i++) arr[i] = tmp[i];
-                        } else { // left
-                            for (int i = 0; i < k; i++) tmp[i] = arr[i];
-                            for (int i = 0; i < n - k; i++) arr[i] = arr[i + k];
-                            for (int i = 0; i < k; i++) arr[n - k + i] = tmp[i];
-                        }
-                        free(tmp);
+                Node *head = NULL, *tail = NULL;
+                for (int i = 0; i < n; i++) {
+                    int v; scanf("%d", &v);
+                    Node* p = (Node*)malloc(sizeof(Node));
+                    p->data = v;
+                    p->next = NULL;
+
+                    if (!head) head = tail = p;
+                    else {
+                        tail->next = p;
+                        tail = p;
                     }
                 }
-                for (int i = 0; i < n; i++) {
-                    printf("%d", arr[i]);
-                    if (i < n - 1) printf(" ");
+                scanf("%d %d", &k, &dir);
+                if (n > 1) {
+                    k %= n;
+                    if (k != 0) {
+                        int shift;
+                        if (dir == 1) {
+                            // сдвиг вправо
+                            shift = n - k;
+                        } else {
+                            // сдвиг влево
+                            shift = k;
+                        }
+                        Node* new_tail = head;
+                        for (int i = 1; i < shift; i++) {
+                            new_tail = new_tail->next;
+                        }
+                        Node* new_head = new_tail->next;
+                        new_tail->next = NULL;
+                        tail->next = head;
+
+                        head = new_head;
+                    }
+                }
+                for (Node* c = head; c; c = c->next) {
+                    printf("%d", c->data);
+                    if (c->next) printf(" ");
                 }
                 printf("\n");
-                free(arr);
+                Node* c = head;
+                while (c) {
+                    Node* nx = c->next;
+                    free(c);
+                    c = nx;
+                }
                 return 0;
             }
         '''
