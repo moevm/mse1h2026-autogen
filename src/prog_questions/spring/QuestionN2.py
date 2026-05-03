@@ -71,33 +71,72 @@ class QuestionN2(QuestionBase):
             current = new_node
         return head
 
+
     @staticmethod
     def _to_values_doubly(head):
-        """Преобразовать двусвязный список в список значений"""
+        """Преобразовать двусвязный список в список значений с проверкой prev-указателей"""
+        if not head:
+            return []
         result = []
         current = head
+        # Проверка: у головы prev должен быть None
+        if head.prev is not None:
+            raise ValueError("Head node has non-None prev pointer")
         while current:
             result.append(current.data)
+            # Проверка обратного указателя
+            if current.next and current.next.prev is not current:
+                raise ValueError(
+                    f"Broken prev link at node with data {current.data}")
             current = current.next
         return result
 
     # Эталонные реализации функций для проверки
     @staticmethod
     def _ref_swap_nodes_singly(head, i, j):
-        """
-        Перестановка узлов на позициях i, j (1-индексация)
-        """
+        """Перестановка узлов с индексами i и j (1-индексация)"""
         if i == j or not head:
             return head
-        node_i = node_j = head
+        if i > j:
+            i, j = j, i
+
+        # Поиск узлов и их предков
+        prev_i = None
+        node_i = head
         for _ in range(1, i):
-            if node_i:
-                node_i = node_i.next
+            prev_i = node_i
+            node_i = node_i.next
+
+        prev_j = None
+        node_j = head
         for _ in range(1, j):
-            if node_j:
-                node_j = node_j.next
-        if node_i and node_j:
-            node_i.data, node_j.data = node_j.data, node_i.data
+            prev_j = node_j
+            node_j = node_j.next
+
+        if not node_i or not node_j:
+            return head
+
+        # Особый случай: соседние узлы (i+1 == j)
+        if node_i.next is node_j:
+            if prev_i:
+                prev_i.next = node_j
+            else:
+                head = node_j  # node_j становится новой головой
+            node_i.next = node_j.next
+            node_j.next = node_i
+        else:
+            next_i, next_j = node_i.next, node_j.next
+            if prev_i:
+                prev_i.next = node_j
+            else:
+                head = node_j
+            if prev_j:
+                prev_j.next = node_i
+            else:
+                head = node_i
+            node_i.next = next_j
+            node_j.next = next_i
+
         return head
 
     @staticmethod
@@ -528,5 +567,11 @@ int main() {
                     return Result.Fail(program_input, expected_output, student_output)
             except ExecutionError as e:
                 return Result.Fail(program_input, expected_output, str(e))
+            except ValueError as e:
+                return Result.Fail(
+                    program_input,
+                    expected_output,
+                    f"Structure validation error: {e}"
+                )
 
         return Result.Ok()
