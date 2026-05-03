@@ -320,33 +320,31 @@ class QuestionN2(QuestionBase):
             base += "<li>Тип списка: <code>односвязный</code></li>"
         else:
             base += "<li>Тип списка: <code>двусвязный</code> (поля <code>prev</code> и <code>next</code>)</li>"
-            
+
         if self.task_id in ['1', '3', '4']:
-            base += f"<li>Число <b>n = {self.list_length}</b> — количество элементов</li>"
+            base += "<li>Число <b>n</b> — количество элементов</li>"
             base += "<li><b>n целых чисел</b> — значения узлов</li>"
             if self.task_id == '1':
-                base += f"<li>Позиции: <b>i = {self.pos_i}</b>, <b>j = {self.pos_j}</b> (индексация начинается с 1)</li>"
+                base += "<li>Две позиции <b>i j</b> (индексация начинается с 1)</li>"
             elif self.task_id == '4':
-                dir_ru = "влево" if self.shift_direction == 'left' else "вправо"
-                base += f"<li>Сдвиг: <b>K = {self.shift_k}</b>, направление: <b>{dir_ru}</b></li>"
-                base += "<li><i>Код направления: <code>0</code> = влево, <code>1</code> = вправо</i></li>"
+                base += "<li>Два числа: <b>K</b> (величина сдвига) и <b>direction</b> (0 = влево, 1 = вправо)</li>"
 
         elif self.task_id == '2':
-            base += f"<li>Первый список: <b>n = {self.list_length}</b> элементов</li>"
+            base += "<li>Число <b>n</b> — количество элементов первого списка</li>"
             base += "<li><b>n целых чисел</b> — значения первого списка</li>"
-            base += f"<li>Второй список: <b>m = {self.list2_length}</b> элементов</li>"
+            base += "<li>Число <b>m</b> — количество элементов второго списка</li>"
             base += "<li><b>m целых чисел</b> — значения второго списка</li>"
-            base += f"<li>Позиции: <b>{self.pos1}</b> (список 1), <b>{self.pos2}</b> (список 2)</li>"
+            base += "<li>Две позиции: <b>pos1 pos2</b></li>"
 
         elif self.task_id == '5':
-            base += f"<li>Число <b>n = {self.list_length}</b> — количество элементов</li>"
+            base += "<li>Число <b>n</b> — количество элементов</li>"
             base += "<li><b>n отсортированных целых чисел</b> — значения списка</li>"
-            base += f"<li>Значение для вставки: <b>{self.insert_value}</b></li>"
+            base += "<li>Целое число — значение для вставки</li>"
 
         elif self.task_id == '6':
-            base += f"<li>Число <b>n = {self.list_length}</b> — количество элементов</li>"
+            base += "<li>Число <b>n</b> — количество элементов</li>"
             base += "<li><b>n целых чисел</b> — значения списка</li>"
-            base += f"<li>Значение для удаления: <b>target = {self.target_value}</b></li>"
+            base += "<li>Целое число <b>target</b> — значение для удаления</li>"
 
         base += "</ul>"
         return base
@@ -392,7 +390,7 @@ class QuestionN2(QuestionBase):
             '''
         elif self.task_id == '6':
             return f'''
-                <p>Удалите <b>все</b> узлы со значением <code>data == {self.target_value}</code>.</p>
+                <p>Удалите <b>все</b> узлы со значением <code>data = {self.target_value}</code>.</p>
                 <p><b>Важно:</b> обновите <code>prev</code>/<code>next</code>, верните <code>NULL</code>, 
                 если список стал пустым.</p>
             '''
@@ -400,7 +398,6 @@ class QuestionN2(QuestionBase):
     
     @property
     def questionText(self) -> str:
-        task_name = self.task_config['name']
         examples = {
             '1': ('4\n10 20 30 40\n2 4', '10 40 30 20', 'Обмен позиций 2 и 4'),
             '2': ('3\n1 2 3\n2\n10 20\n2 1', '1 10 3\n2 20', 'Обмен между списками'),
@@ -412,21 +409,29 @@ class QuestionN2(QuestionBase):
         inp, out, note = examples.get(self.task_id, ('...', '...', '...'))
 
         return f'''
-<h1>{task_name} (ID: {self.task_id})</h1>
 <p>Язык: <b>C</b> (компиляция <code>gcc</code>), тип списка: <b>{"двусвязный" if self.list_type == "doubly" else "односвязный"}</b>.</p>
 
 {self._get_task_specific_condition()}
 {self._get_input_format_description()}
 {self._get_output_format_description()}
 
-<h4>Пример</h4>
-<table border="1" width="100%">
-    <thead><tr><th>Вход</th><th>Выход</th><th>Пояснение</th></tr></thead>
+<b>Пример</b>
+<table class="coderunnerexamples">
+    <thead>
+        <tr>
+            <th class="header c0" scope="col">Входные данные</th>
+            <th class="header c1" scope="col">Результат</th>
+            <th class="header c2 lastcol" scope="col">Пояснение</th>
+        </tr>
+    </thead>
     <tbody>
-        <tr><td><pre>{inp}</pre></td><td><pre>{out}</pre></td><td><i>{note}</i></td></tr>
+        <tr class="r0 lastrow">
+            <td class="cell c0"><pre class="tablecell">{inp}</pre></td>
+            <td class="cell c1"><pre class="tablecell">{out}</pre></td>
+            <td class="cell c2 lastcol">{note}</td>
+        </tr>
     </tbody>
 </table>
-<p><b>Seed:</b> <code>{self.seed}</code></p>
 '''
 
     @property

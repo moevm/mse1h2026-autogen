@@ -18,7 +18,6 @@ class TestQuestionN2_Basic:
         txt = self.question.questionText
         assert 'односвязный' in txt or 'двусвязный' in txt
         assert 'Формат входных данных' in txt
-        assert 'Seed' in txt
 
 
 class TestQuestionN2_Singly:
