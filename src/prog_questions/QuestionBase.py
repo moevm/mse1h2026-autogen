@@ -118,7 +118,7 @@ class QuestionBase(ABC):
 
         try:
             result = self.test(code)
-            success = result == Result.Ok()
+            success = isinstance(result, Result.Ok)
 
             if success:
                 output['prologuehtml'] = '<h4>Всё хорошо</h4>'
