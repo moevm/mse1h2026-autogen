@@ -348,25 +348,24 @@ class QuestionN1(QuestionBase):
         self.maxLines = save_max
 
         table = f'''
-            <div style="overflow-x: auto; max-width: 100%;">
-                <table class="coderunnerexamples" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th class="header c0" style="width: 70%;" scope="col">Входные данные</th>
-                            <th class="header c2 lastcol" style="width: 30%;" scope="col">Результат</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="r0 lastrow">
-                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{goodTest[0]}</pre></td>
-                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{goodTest[1]}</pre></td>
-                        </tr>
-                        <tr class="r0 lastrow">
-                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{badTest[0]}</pre></td>
-                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{badTest[1]}</pre></td>
-                        </tr>
-                    </tbody>
-                </table>
+<table class="coderunnerexamples">
+    <thead>
+        <tr>
+            <th class="header c0" scope="col">Входные данные</th>
+            <th class="header c1 lastcol" scope="col">Результат</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="r0">
+            <td class="cell c0"><pre class="tablecell">{goodTest[0]}</pre></td>
+            <td class="cell c1 lastcol"><pre class="tablecell">{goodTest[1]}</pre></td>
+        </tr>
+        <tr class="r1 lastrow">
+            <td class="cell c0"><pre class="tablecell">{badTest[0]}</pre></td>
+            <td class="cell c1 lastcol"><pre class="tablecell">{badTest[1]}</pre></td>
+        </tr>
+    </tbody>
+</table>
         '''
 
         _what_to_extract = {
@@ -422,56 +421,56 @@ class QuestionN1(QuestionBase):
  
         variant_texts = {
             'http_method': f'''
-                <h3>Извлечение поля из лога HTTP-сервера</h3>
-                <p>В логах сервера каждая строка имеет формат:<br>
-                <code>[YYYY-MM-DD HH:MM:SS] МЕТОД /путь from IP status=КОД</code><br>
-                Напишите регулярное выражение, которое извлекает: <b>{http_what}</b></p>
-                <p><b>Язык:</b> C (компилируется
-                <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).
-                Используйте соответствующий синтаксис. {http_group_hint}</p>
-                <p>Пример:</p>{table}
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>В логах сервера каждая строка имеет формат:<br>
+<code>[YYYY-MM-DD HH:MM:SS] МЕТОД /путь from IP status=КОД</code><br>
+Напишите регулярное выражение, которое извлекает: <b>{http_what}</b></p>
+<p>Используйте соответствующий синтаксис. {http_group_hint}</p>
+
+<b>Пример</b>
+{table}
             ''',
             'email': f'''
-                <h3>Извлечение данных из email-адреса</h3>
-                <p>В тексте встречаются адреса электронной почты. Напишите регулярное выражение, которое
-                извлекает <b>{email_what}</b>.<br>
-                Формат адреса: <b>имя@домен.зона</b>, где имя состоит из латинских букв, цифр,
-                точек, дефисов и подчёркиваний (не начинается и не заканчивается точкой);
-                зона - от 2 до 4 латинских букв.</p>
-                <p><b>Язык:</b> C (компилируется
-                <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).
-                Используйте соответствующий синтаксис. {email_group_hint}</p>
-                <p>Пример:</p>{table}
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>В тексте встречаются адреса электронной почты. Напишите регулярное выражение, которое
+извлекает <b>{email_what}</b>.<br>
+Формат адреса: <b>имя@домен.зона</b>, где имя состоит из латинских букв, цифр,
+точек, дефисов и подчёркиваний (не начинается и не заканчивается точкой);
+зона - от 2 до 4 латинских букв.</p>
+<p>Используйте соответствующий синтаксис. {email_group_hint}</p>
+
+<b>Пример</b>
+{table}
             ''',
             'date_in_filename': f'''
-                <h3>Извлечение даты из имени файла</h3>
-                <p>Каждая строка - одно имя файла резервной копии. Напишите регулярное выражение,
-                которое извлекает <b>{date_what}</b><br>
-                Допустимые форматы: <b>YYYY-MM-DD</b>, <b>MM-DD-YYYY</b>, <b>DD-MM-YYYY</b>.
-                {date_group_hint}</p>
-                <p><b>Язык:</b> C (компилируется
-                <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).
-                Используйте соответствующий синтаксис.</p>
-                <p>Пример:</p>{table}
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>Каждая строка - одно имя файла резервной копии. Напишите регулярное выражение,
+которое извлекает <b>{date_what}</b><br>
+Допустимые форматы: <b>YYYY-MM-DD</b>, <b>MM-DD-YYYY</b>, <b>DD-MM-YYYY</b>.
+{date_group_hint}</p>
+<p>Используйте соответствующий синтаксис.</p>
+
+<b>Пример</b>
+{table}
             ''',
             'version': f'''
-                <h3>Извлечение версии программы</h3>
-                <p>Утилиты при запуске печатают версию в разных форматах. Напишите регулярное выражение,
-                которое извлекает <b>{version_what}</b>
-                Строки без версии не выводятся.</p>
-                <p><b>Язык:</b> C (компилируется
-                <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).
-                Используйте соответствующий синтаксис. {version_group_hint}</p>
-                <p>Пример:</p>{table}
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>Утилиты при запуске печатают версию в разных форматах. Напишите регулярное выражение,
+которое извлекает <b>{version_what}</b>
+Строки без версии не выводятся.</p>
+<p>Используйте соответствующий синтаксис. {version_group_hint}</p>
+
+<b>Пример</b>
+{table}
             ''',
             'url_path': f'''
-                <h3>Извлечение компонента из URL</h3>
-                <p>В таблице редиректов хранятся полные URL вида <code>схема://домен/путь</code>.
-                Напишите регулярное выражение, которое извлекает <b>{url_what}</b></p>
-                <p><b>Язык:</b> C (компилируется
-                <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).
-                Используйте соответствующий синтаксис. {url_group_hint}</p>
-                <p>Пример:</p>{table}
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>В таблице редиректов хранятся полные URL вида <code>схема://домен/путь</code>.
+Напишите регулярное выражение, которое извлекает <b>{url_what}</b></p>
+<p>Используйте соответствующий синтаксис. {url_group_hint}</p>
+
+<b>Пример</b>
+{table}
             ''',
         }
  
