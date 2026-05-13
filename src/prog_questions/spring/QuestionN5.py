@@ -8,7 +8,7 @@ import tempfile
 
 
 class QuestionN5(QuestionBase):
-    questionName = 'Задание 5, Работа с файловой системой'
+    questionName = 'Задание 5. Работа с директорией и файловой системой'
 
     # Возможные типы заданий
     TASK_DELETE_RENAME    = 'delete_rename'
@@ -479,118 +479,191 @@ class QuestionN5(QuestionBase):
 
         return Result.Ok()
 
-    @property
-    def questionText(self) -> str:
-        """
-        Возвращает HTML-текст задания в зависимости от типа.
-        """
-        # Описания для каждого типа задания: (заголовок, условие, пример_ввода, пример_вывода)
+    def _get_task_condition(self) -> str:
         if self.taskType == self.TASK_DELETE_RENAME:
-            title   = 'Удаление и переименование файла'
-            desc    = '''На вход подаются три имени файлов: <b>to_delete</b>, <b>old_name</b>, <b>new_name</b>.<br>
-                Удалите файл <b>to_delete</b>, затем переименуйте <b>old_name</b> в <b>new_name</b>.<br>
-                Для каждой операции выведите <code>ok</code> при успехе или <code>error</code> при ошибке.<br>
-                Используйте функции <code>remove</code> и <code>rename</code>.'''
-            ex_in   = 'to_delete.txt\nold.txt\nnew.txt'
-            ex_out  = 'ok\nok'
+            return '''<p>Удалите файл <b>to_delete</b>, затем переименуйте <b>old_name</b> в <b>new_name</b>.</p>
+<p>Для каждой операции выведите <code>ok</code> при успехе или <code>error</code> при ошибке.</p>
+<p><b>Важно:</b> используйте функции <code>remove</code> и <code>rename</code>.</p>'''
 
         elif self.taskType == self.TASK_READ_HEX:
-            title   = 'Чтение байт из файла в hex-формате'
-            desc    = '''На вход подаются: имя файла, смещение <b>offset</b> (байт от начала),
-                количество байт <b>N</b> и размер группы <b>group_size</b> (1, 2, 4 или 8).<br>
-                Прочитайте <b>N</b> байт с позиции <b>offset</b>, интерпретируйте их группами
-                по <b>group_size</b> байт (little-endian) и выведите каждую группу как hex-число через пробел.<br>
-                Форматы: 1 байт → <code>%02x</code>, 2 байта → <code>%04x</code>,
-                4 байта → <code>%08x</code>, 8 байт → <code>%016x</code>.<br>
-                <b>N</b> всегда кратно <b>group_size</b>.<br>
-                Используйте <code>fopen</code>, <code>fseek</code> с <code>SEEK_SET</code>, <code>fread</code>.'''
-            ex_in   = 'data.bin\n4\n8\n2'
-            ex_out  = '3f1a 92b0 c401 58de'
+            return '''<p>Прочитайте <b>N</b> байт из файла с позиции <b>offset</b>, интерпретируйте их группами
+по <b>group_size</b> байт (little-endian) и выведите каждую группу как hex-число через пробел.</p>
+<p>Форматы: 1 байт → <code>%02x</code>, 2 байта → <code>%04x</code>,
+4 байта → <code>%08x</code>, 8 байт → <code>%016x</code>.</p>
+<p><b>Важно:</b> <b>N</b> всегда кратно <b>group_size</b>. Используйте <code>fopen</code>,
+<code>fseek</code> с <code>SEEK_SET</code>, <code>fread</code>.</p>'''
 
         elif self.taskType == self.TASK_OVERWRITE_BYTES:
-            title   = 'Перезапись байт по позиции'
-            desc    = '''На вход подаются: имя файла, смещение <b>offset</b> (байт от начала)
-                и строка <b>data</b>.<br>
-                Запишите содержимое строки <b>data</b> в файл начиная с позиции <b>offset</b>,
-                перезаписав существующие байты. Остальное содержимое файла не должно изменяться.<br>
-                Вывод не требуется.<br>
-                Откройте файл в режиме <code>"r+"</code>, используйте <code>fseek</code>
-                с <code>SEEK_SET</code> и <code>fwrite</code>.'''
-            ex_in   = 'config.txt\n5\nNEWDATA'
-            ex_out  = '(нет вывода)'
+            return '''<p>Запишите содержимое строки <b>data</b> в файл начиная с позиции <b>offset</b>,
+перезаписав существующие байты. Остальное содержимое файла не должно изменяться.</p>
+<p><b>Важно:</b> откройте файл в режиме <code>"r+"</code>, используйте <code>fseek</code>
+с <code>SEEK_SET</code> и <code>fwrite</code>. Вывод не требуется.</p>'''
 
         elif self.taskType == self.TASK_FILE_STATS:
-            title   = 'Статистика файла'
-            desc    = '''На вход подаётся имя файла.<br>
-                Выведите три строки:<br>
-                <ol>
-                    <li>Размер файла в байтах (через <code>fseek(SEEK_END)</code> + <code>ftell</code>)</li>
-                    <li>Количество строк (количество символов <code>\\n</code>)</li>
-                    <li>Длина самой длинной строки (без символа <code>\\n</code>)</li>
-                </ol>
-                Используйте <code>fseek</code>, <code>ftell</code> и <code>fgets</code>.'''
-            ex_in   = 'data.txt'
-            ex_out  = '42\n3\n18'
+            return '''<p>Выведите три характеристики файла:</p>
+<ol>
+    <li>Размер файла в байтах (через <code>fseek(SEEK_END)</code> + <code>ftell</code>)</li>
+    <li>Количество строк (количество символов <code>\\n</code>)</li>
+    <li>Длина самой длинной строки (без символа <code>\\n</code>)</li>
+</ol>
+<p><b>Важно:</b> используйте <code>fseek</code>, <code>ftell</code> и <code>fgets</code>.</p>'''
 
         elif self.taskType == self.TASK_MERGE_FILES:
-            title   = 'Объединение файлов'
-            desc    = '''На вход подаются два имени файлов: <b>src</b> и <b>dst</b>.<br>
-                Допишите содержимое файла <b>src</b> в конец файла <b>dst</b>
-                (не удаляя существующее содержимое).<br>
-                Выведите итоговый размер файла <b>dst</b> в байтах.<br>
-                Используйте <code>fopen(dst, "ab")</code>, <code>fread</code>, <code>fwrite</code>.'''
-            ex_in   = 'src.txt\ndst.txt'
-            ex_out  = '87'
+            return '''<p>Допишите содержимое файла <b>src</b> в конец файла <b>dst</b>
+(не удаляя существующее содержимое). Выведите итоговый размер файла <b>dst</b> в байтах.</p>
+<p><b>Важно:</b> используйте <code>fopen(dst, "ab")</code>, <code>fread</code>, <code>fwrite</code>.</p>'''
 
         elif self.taskType == self.TASK_LIST_DIRECTORY:
-            title   = 'Список содержимого директории'
-            desc    = '''На вход подаётся имя директории.<br>
-                Выведите все записи в ней (кроме <code>.</code> и <code>..</code>)
-                в лексикографическом порядке, по одной на строку в формате:
-                <code>имя [тип]</code>, где тип — <code>file</code>, <code>dir</code>
-                или <code>link</code>.<br>
-                Для определения типа используйте <code>lstat</code> (не <code>stat</code>) —
-                она не разыменовывает символические ссылки.<br>
-                Используйте <code>opendir</code>, <code>readdir</code>, <code>lstat</code>.'''
-            ex_in   = './mydir'
-            ex_out  = 'notes.txt [file]\nreport.md [file]\nsrc [dir]'
+            return '''<p>Выведите все записи в директории (кроме <code>.</code> и <code>..</code>)
+в лексикографическом порядке, по одной на строку в формате:
+<code>имя [тип]</code>, где тип — <code>file</code>, <code>dir</code> или <code>link</code>.</p>
+<p><b>Важно:</b> для определения типа используйте <code>lstat</code> (не <code>stat</code>) —
+она не разыменовывает символические ссылки. Используйте <code>opendir</code>, <code>readdir</code>.</p>'''
 
         else:
-            # TASK_COUNT_LINES
-            title   = 'Подсчёт строк в файлах директории'
-            desc    = '''На вход подаётся имя директории.<br>
-                Для каждого обычного файла в ней (не рекурсивно) подсчитайте количество строк
-                (количество символов <code>\\n</code>).<br>
-                Выведите результаты в формате: <code>имя: количество</code> (по одному на строку, порядок любой).<br>
-                Используйте <code>opendir</code>, <code>readdir</code>, <code>stat</code>,
-                <code>fgets</code>.'''
-            ex_in   = './texts'
-            ex_out  = 'a.txt: 5\nb.txt: 3\nnotes.txt: 7'
+            return '''<p>Для каждого обычного файла в директории (не рекурсивно) подсчитайте количество строк
+(количество символов <code>\\n</code>).</p>
+<p>Выведите результаты в формате: <code>имя: количество</code> (по одному на строку, порядок любой).</p>
+<p><b>Важно:</b> используйте <code>opendir</code>, <code>readdir</code>, <code>stat</code>, <code>fgets</code>.</p>'''
+
+    def _get_input_format(self) -> str:
+        base = '<p><b>Формат входных данных:</b></p><ul>'
+
+        if self.taskType == self.TASK_DELETE_RENAME:
+            base += '<li>Строка <b>to_delete</b> — имя файла для удаления</li>'
+            base += '<li>Строка <b>old_name</b> — текущее имя файла</li>'
+            base += '<li>Строка <b>new_name</b> — новое имя файла</li>'
+
+        elif self.taskType == self.TASK_READ_HEX:
+            base += '<li>Строка <b>filename</b> — имя бинарного файла</li>'
+            base += '<li>Целое число <b>offset</b> — смещение от начала файла (в байтах)</li>'
+            base += '<li>Целое число <b>N</b> — количество байт для чтения</li>'
+            base += '<li>Целое число <b>group_size</b> — размер группы (1, 2, 4 или 8)</li>'
+
+        elif self.taskType == self.TASK_OVERWRITE_BYTES:
+            base += '<li>Строка <b>filename</b> — имя файла</li>'
+            base += '<li>Целое число <b>offset</b> — смещение от начала файла (в байтах)</li>'
+            base += '<li>Строка <b>data</b> — данные для записи</li>'
+
+        elif self.taskType == self.TASK_FILE_STATS:
+            base += '<li>Строка <b>filename</b> — имя текстового файла</li>'
+
+        elif self.taskType == self.TASK_MERGE_FILES:
+            base += '<li>Строка <b>src</b> — имя файла-источника</li>'
+            base += '<li>Строка <b>dst</b> — имя файла-приёмника</li>'
+
+        elif self.taskType == self.TASK_LIST_DIRECTORY:
+            base += '<li>Строка <b>dirname</b> — имя директории</li>'
+
+        else:
+            base += '<li>Строка <b>dirname</b> — имя директории</li>'
+
+        base += '</ul>'
+        return base
+
+    def _get_output_format(self) -> str:
+        if self.taskType == self.TASK_DELETE_RENAME:
+            return ('<p><b>Формат выходных данных:</b></p>'
+                    '<p>Две строки: <code>ok</code> или <code>error</code> для каждой операции (удаление, переименование).</p>')
+        elif self.taskType == self.TASK_READ_HEX:
+            return ('<p><b>Формат выходных данных:</b></p>'
+                    '<p>Hex-числа через пробел в одну строку.</p>')
+        elif self.taskType == self.TASK_OVERWRITE_BYTES:
+            return ('<p><b>Формат выходных данных:</b></p>'
+                    '<p>Вывод не требуется. Проверяется содержимое файла после работы программы.</p>')
+        elif self.taskType == self.TASK_FILE_STATS:
+            return ('<p><b>Формат выходных данных:</b></p>'
+                    '<p>Три строки: размер в байтах, количество строк, длина самой длинной строки.</p>')
+        elif self.taskType == self.TASK_MERGE_FILES:
+            return ('<p><b>Формат выходных данных:</b></p>'
+                    '<p>Одно число — итоговый размер файла <b>dst</b> в байтах.</p>')
+        elif self.taskType == self.TASK_LIST_DIRECTORY:
+            return ('<p><b>Формат выходных данных:</b></p>'
+                    '<p>По одной записи на строку: <code>имя [тип]</code>, отсортировано лексикографически.</p>')
+        else:
+            return ('<p><b>Формат выходных данных:</b></p>'
+                    '<p>По одной записи на строку: <code>имя: количество</code>.</p>')
+
+    def _get_example(self) -> tuple:
+        examples = {
+            self.TASK_DELETE_RENAME: (
+                'to_delete.txt\nold.txt\nnew.txt',
+                'ok\nok',
+            ),
+            self.TASK_READ_HEX: (
+                'data.bin\n4\n8\n2',
+                '3f1a 92b0 c401 58de',
+            ),
+            self.TASK_OVERWRITE_BYTES: (
+                'config.txt\n5\nNEWDATA',
+                '(нет вывода)',
+            ),
+            self.TASK_FILE_STATS: (
+                'data.txt',
+                '42\n3\n18',
+            ),
+            self.TASK_MERGE_FILES: (
+                'src.txt\ndst.txt',
+                '87',
+            ),
+            self.TASK_LIST_DIRECTORY: (
+                './mydir',
+                'notes.txt [file]\nreport.md [file]\nsrc [dir]',
+            ),
+            self.TASK_COUNT_LINES: (
+                './texts',
+                'a.txt: 5\nb.txt: 3\nnotes.txt: 7',
+            ),
+        }
+        return examples[self.taskType]
+
+    @property
+    def questionText(self) -> str:
+        titles = {
+            self.TASK_DELETE_RENAME:  'Удаление и переименование файла',
+            self.TASK_READ_HEX:      'Чтение байт из файла в hex-формате',
+            self.TASK_OVERWRITE_BYTES:'Перезапись байт по позиции',
+            self.TASK_FILE_STATS:    'Статистика файла',
+            self.TASK_MERGE_FILES:   'Объединение файлов',
+            self.TASK_LIST_DIRECTORY: 'Список содержимого директории',
+            self.TASK_COUNT_LINES:   'Подсчёт строк в файлах директории',
+        }
+        title = titles[self.taskType]
+
+        is_dir_task = self.taskType in (self.TASK_LIST_DIRECTORY, self.TASK_COUNT_LINES)
+        if is_dir_task:
+            api_hint = ('Для работы с директориями используйте POSIX-функции '
+                        '(<code>opendir</code>, <code>readdir</code>, <code>stat</code>/<code>lstat</code>).')
+        else:
+            api_hint = ('Для работы с файлами используйте стандартные функции C '
+                        '(<code>fopen</code>, <code>fclose</code>, <code>fseek</code>, '
+                        '<code>fread</code>, <code>fwrite</code>, <code>rename</code>, <code>remove</code>).')
+
+        ex_in, ex_out = self._get_example()
 
         return f'''
-            <b>Язык: C (компилируется gcc), Linux.</b><br>
-            Для работы с файлами используйте стандартные функции C
-            (<code>fopen</code>, <code>fclose</code>, <code>fseek</code>,
-            <code>fread</code>, <code>fwrite</code>, <code>rename</code>, <code>remove</code>).<br>
-            Для работы с директориями — POSIX-функции
-            (<code>opendir</code>, <code>readdir</code>, <code>stat</code>).<br><br>
-            <h4>{title}</h4>
-            {desc}
-            <table class="coderunnerexamples">
-                <thead>
-                    <tr>
-                        <th class="header c0" scope="col">Входные данные</th>
-                        <th class="header c1 lastcol" scope="col">Результат</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="r0 lastrow">
-                        <td class="cell c0"><pre class="tablecell">{ex_in}</pre></td>
-                        <td class="cell c1 lastcol"><pre class="tablecell">{ex_out}</pre></td>
-                    </tr>
-                </tbody>
-            </table>
-        '''
+<p>Язык: <b>C</b> (компиляция <code>gcc</code>). {api_hint}</p>
+
+{self._get_task_condition()}
+{self._get_input_format()}
+{self._get_output_format()}
+
+<b>Пример</b>
+<table class="coderunnerexamples">
+    <thead>
+        <tr>
+            <th class="header c0" scope="col">Входные данные</th>
+            <th class="header c1 lastcol" scope="col">Результат</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="r0 lastrow">
+            <td class="cell c0"><pre class="tablecell">{ex_in}</pre></td>
+            <td class="cell c1 lastcol"><pre class="tablecell">{ex_out}</pre></td>
+        </tr>
+    </tbody>
+</table>
+'''
 
     @property
     def preloadedCode(self) -> str:
