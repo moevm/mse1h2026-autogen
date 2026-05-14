@@ -79,7 +79,7 @@ class CProgramRunner:
         self.exit_code_handler = ExitCodeHandler()
 
         try:
-            self.tmp_dir = tempfile.TemporaryDirectory(dir=".")
+            self.tmp_dir = tempfile.TemporaryDirectory()
         except Exception as e:
             raise EnvironmentError(f"Не удалось создать временную директорию: {e}")
 
