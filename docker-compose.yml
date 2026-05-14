@@ -1,6 +1,13 @@
-services: 
-  build-prog-questions: 
+services:
+  build-prog-questions:
     build: .
+    volumes:
+      - ./src:/app/src:ro
+      - ./dist:/app/dist
+
+  build-prog-questions-debug:
+    build: .
+    command: ["python", "build/build.py", "--debug"]
     volumes:
       - ./src:/app/src:ro
       - ./dist:/app/dist
