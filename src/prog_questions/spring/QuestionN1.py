@@ -421,7 +421,7 @@ class QuestionN1(QuestionBase):
  
         variant_texts = {
             'http_method': f'''
-<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall</code>). Регулярное выражение будет проверяться как Си-программа, используйте соответствующий синтаксис.</p>
 <p>В логах сервера каждая строка имеет формат:<br>
 <code>[YYYY-MM-DD HH:MM:SS] МЕТОД /путь from IP status=КОД</code><br>
 Напишите регулярное выражение, которое извлекает: <b>{http_what}</b></p>
@@ -431,7 +431,7 @@ class QuestionN1(QuestionBase):
 {table}
             ''',
             'email': f'''
-<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall</code>). Регулярное выражение будет проверяться как Си-программа, используйте соответствующий синтаксис.</p>
 <p>В тексте встречаются адреса электронной почты. Напишите регулярное выражение, которое
 извлекает <b>{email_what}</b>.<br>
 Формат адреса: <b>имя@домен.зона</b>, где имя состоит из латинских букв, цифр,
@@ -443,7 +443,7 @@ class QuestionN1(QuestionBase):
 {table}
             ''',
             'date_in_filename': f'''
-<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall</code>). Регулярное выражение будет проверяться как Си-программа, используйте соответствующий синтаксис.</p>
 <p>Каждая строка - одно имя файла резервной копии. Напишите регулярное выражение,
 которое извлекает <b>{date_what}</b><br>
 Допустимые форматы: <b>YYYY-MM-DD</b>, <b>MM-DD-YYYY</b>, <b>DD-MM-YYYY</b>.
@@ -454,7 +454,7 @@ class QuestionN1(QuestionBase):
 {table}
             ''',
             'version': f'''
-<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall</code>). Регулярное выражение будет проверяться как Си-программа, используйте соответствующий синтаксис.</p>
 <p>Утилиты при запуске печатают версию в разных форматах. Напишите регулярное выражение,
 которое извлекает <b>{version_what}</b>
 Строки без версии не выводятся.</p>
@@ -464,7 +464,7 @@ class QuestionN1(QuestionBase):
 {table}
             ''',
             'url_path': f'''
-<p>Язык: <b>C</b> (компилируется <code>g++ -Wall -Werror -Wreturn-type -g -fsanitize=address,undefined solution.c -o solution</code>).</p>
+<p>Язык: <b>C</b> (компилируется <code>g++ -Wall</code>). Регулярное выражение будет проверяться как Си-программа, используйте соответствующий синтаксис.</p>
 <p>В таблице редиректов хранятся полные URL вида <code>схема://домен/путь</code>.
 Напишите регулярное выражение, которое извлекает <b>{url_what}</b></p>
 <p>Используйте соответствующий синтаксис. {url_group_hint}</p>
