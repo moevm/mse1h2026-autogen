@@ -348,24 +348,25 @@ class QuestionN1(QuestionBase):
         self.maxLines = save_max
 
         table = f'''
-<table class="coderunnerexamples">
-    <thead>
-        <tr>
-            <th class="header c0" scope="col">Входные данные</th>
-            <th class="header c1 lastcol" scope="col">Результат</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr class="r0">
-            <td class="cell c0"><pre class="tablecell">{goodTest[0]}</pre></td>
-            <td class="cell c1 lastcol"><pre class="tablecell">{goodTest[1]}</pre></td>
-        </tr>
-        <tr class="r1 lastrow">
-            <td class="cell c0"><pre class="tablecell">{badTest[0]}</pre></td>
-            <td class="cell c1 lastcol"><pre class="tablecell">{badTest[1]}</pre></td>
-        </tr>
-    </tbody>
-</table>
+            <div style="overflow-x: auto; max-width: 100%;">
+                <table class="coderunnerexamples" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th class="header c0" style="width: 70%;" scope="col">Входные данные</th>
+                            <th class="header c2 lastcol" style="width: 30%;" scope="col">Результат</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="r0 lastrow">
+                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{goodTest[0]}</pre></td>
+                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{goodTest[1]}</pre></td>
+                        </tr>
+                        <tr class="r0 lastrow">
+                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{badTest[0]}</pre></td>
+                            <td class="cell c1"><pre class="tablecell" style="margin: 0;">{badTest[1]}</pre></td>
+                        </tr>
+                    </tbody>
+                </table>
         '''
 
         _what_to_extract = {
