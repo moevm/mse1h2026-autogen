@@ -313,6 +313,7 @@ int main() {{
             '''
 
         return f'''
+            <p>Язык: <b>C++</b> (компиляция <code>g++</code>)</p>
             {task_desc}
             <br>
             Методы класса:
