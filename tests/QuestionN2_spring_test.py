@@ -6,8 +6,9 @@ import pytest
 
 class TestQuestionN2_Basic:
     """Базовые тесты структуры задания и препроцессинга"""
+    # allowed_tasks теперь принимает названия операций, а не цифры
     question = moodleInit(QuestionN2, seed=100, allowed_tasks=[
-                          '1'], list_type_override='singly')
+                          'swap'], list_type_override='singly')
 
     def test_code_preload(self):
         """Препроцессированный код должен компилироваться без ошибок"""
@@ -21,14 +22,24 @@ class TestQuestionN2_Basic:
 
 
 class TestQuestionN2_Singly:
-    """Тесты для односвязных списков (задания 1, 3, 4)"""
+    """Тесты для односвязных списков (операции: swap, reverse, shift)"""
     question = moodleInit(QuestionN2, seed=200, allowed_tasks=[
-                          '1', '3', '4'], list_type_override='singly')
+                          'swap', 'reverse', 'shift'], list_type_override='singly')
+
+    def _force_config(self, operation: str, num_lists: int = 1):
+        """Вспомогательный метод для фиксации конфигурации перед тестом"""
+        self.question.config.operation = operation
+        self.question.config.num_lists = num_lists
+        self.question.config.list_type = 'singly'
+        # Обновляем task_id для совместимости, если он где-то используется
+        self.question.task_id = self.question.config.task_id
+        # Перегенерируем значения списков под новую конфигурацию
+        self.question._generate_list_values()
 
     def test_swap_nodes_success(self):
-        """Задание 1: перестановка двух узлов"""
-        self.question.task_id = '1'
-        self.question._generate_task_parameters()
+        """Операция swap: перестановка двух элементов в одном списке"""
+        self._force_config('swap', num_lists=1)
+
         code = r'''
             #include <stdio.h>
             #include <stdlib.h>
@@ -62,9 +73,9 @@ class TestQuestionN2_Singly:
         assert self.question.test(code) == Result.Ok()
 
     def test_reverse_success(self):
-        """Задание 3: разворот списка"""
-        self.question.task_id = '3'
-        self.question._generate_task_parameters()
+        """Операция reverse: разворот списка"""
+        self._force_config('reverse', num_lists=1)
+
         code = r'''
             #include <stdio.h>
             #include <stdlib.h>
@@ -90,18 +101,13 @@ class TestQuestionN2_Singly:
         assert self.question.test(code) == Result.Ok()
 
     def test_cyclic_shift_success(self):
-        """Задание 4: циклический сдвиг (через односвязный список, без зацикливания)"""
-        self.question.task_id = '4'
-        self.question._generate_task_parameters()
+        """Операция shift: циклический сдвиг"""
+        self._force_config('shift', num_lists=1)
+
         code = r'''
             #include <stdio.h>
             #include <stdlib.h>
-
-            typedef struct Node {
-                int data;
-                struct Node* next;
-            } Node;
-
+            typedef struct Node { int data; struct Node* next; } Node;
             int main() {
                 int n, k, dir;
                 if (scanf("%d", &n) != 1) return 1;
@@ -109,35 +115,20 @@ class TestQuestionN2_Singly:
                 for (int i = 0; i < n; i++) {
                     int v; scanf("%d", &v);
                     Node* p = (Node*)malloc(sizeof(Node));
-                    p->data = v;
-                    p->next = NULL;
-
+                    p->data = v; p->next = NULL;
                     if (!head) head = tail = p;
-                    else {
-                        tail->next = p;
-                        tail = p;
-                    }
+                    else { tail->next = p; tail = p; }
                 }
                 scanf("%d %d", &k, &dir);
                 if (n > 1) {
                     k %= n;
                     if (k != 0) {
-                        int shift;
-                        if (dir == 1) {
-                            // сдвиг вправо
-                            shift = n - k;
-                        } else {
-                            // сдвиг влево
-                            shift = k;
-                        }
+                        int shift = (dir == 1) ? (n - k) : k;
                         Node* new_tail = head;
-                        for (int i = 1; i < shift; i++) {
-                            new_tail = new_tail->next;
-                        }
+                        for (int i = 1; i < shift; i++) new_tail = new_tail->next;
                         Node* new_head = new_tail->next;
                         new_tail->next = NULL;
                         tail->next = head;
-
                         head = new_head;
                     }
                 }
@@ -147,11 +138,68 @@ class TestQuestionN2_Singly:
                 }
                 printf("\n");
                 Node* c = head;
-                while (c) {
-                    Node* nx = c->next;
-                    free(c);
-                    c = nx;
+                while (c) { Node* nx = c->next; free(c); c = nx; }
+                return 0;
+            }
+        '''
+        assert self.question.test(code) == Result.Ok()
+
+    def test_swap_two_lists_success(self):
+        """Операция swap: обмен элементами между двумя списками"""
+        self._force_config('swap', num_lists=2)
+
+        code = r'''
+            #include <stdio.h>
+            #include <stdlib.h>
+            typedef struct Node { int data; struct Node* next; } Node;
+            
+            Node* build_list(int n) {
+                Node* head = NULL, *tail = NULL;
+                for (int k = 0; k < n; k++) {
+                    int v; scanf("%d", &v);
+                    Node* p = (Node*)malloc(sizeof(Node));
+                    p->data = v; p->next = NULL;
+                    if (!head) head = tail = p;
+                    else { tail->next = p; tail = p; }
                 }
+                return head;
+            }
+            
+            void print_list(Node* head) {
+                for (Node* c = head; c; c = c->next) {
+                    printf("%d", c->data);
+                    if (c->next) printf(" ");
+                }
+                printf("\n");
+            }
+            
+            void free_list(Node* head) {
+                while (head) { Node* nx = head->next; free(head); head = nx; }
+            }
+            
+            int main() {
+                int n, m, pos1, pos2;
+                if (scanf("%d", &n) != 1) return 1;
+                Node* h1 = build_list(n);
+                if (scanf("%d", &m) != 1) return 1;
+                Node* h2 = build_list(m);
+                scanf("%d %d", &pos1, &pos2);
+                
+                // Поиск узлов для обмена
+                Node* p1 = h1, *p2 = h2;
+                for (int k = 1; k < pos1 && p1; k++) p1 = p1->next;
+                for (int k = 1; k < pos2 && p2; k++) p2 = p2->next;
+                
+                if (p1 && p2) {
+                    int tmp = p1->data;
+                    p1->data = p2->data;
+                    p2->data = tmp;
+                }
+                
+                print_list(h1);
+                print_list(h2);
+                free_list(h1);
+                free_list(h2);
                 return 0;
             }
         '''
@@ -159,14 +207,24 @@ class TestQuestionN2_Singly:
 
 
 class TestQuestionLists_Doubly:
-    """Тесты для двусвязных списков (задания 5, 6)"""
+    """Тесты для двусвязных списков (операции: insert, delete)"""
     question = moodleInit(QuestionN2, seed=300, allowed_tasks=[
-                          '5', '6'], list_type_override='doubly')
+                          'insert', 'delete'], list_type_override='doubly')
+
+    def _force_config(self, operation: str):
+        """Вспомогательный метод для фиксации конфигурации перед тестом"""
+        self.question.config.operation = operation
+        self.question.config.num_lists = 1
+        self.question.config.list_type = 'doubly'
+        if operation == 'insert':
+            self.question.config.is_sorted = True
+        self.question.task_id = self.question.config.task_id
+        self.question._generate_list_values()
 
     def test_insert_sorted_success(self):
-        """Задание 5: вставка в отсортированный двусвязный список"""
-        self.question.task_id = '5'
-        self.question._generate_task_parameters()
+        """Операция insert: вставка в отсортированный двусвязный список"""
+        self._force_config('insert')
+
         code = r'''
             #include <stdio.h>
             #include <stdlib.h>
@@ -207,9 +265,9 @@ class TestQuestionLists_Doubly:
         assert self.question.test(code) == Result.Ok()
 
     def test_delete_nodes_success(self):
-        """Задание 6: удаление узлов по значению"""
-        self.question.task_id = '6'
-        self.question._generate_task_parameters()
+        """Операция delete: удаление элементов по значению"""
+        self._force_config('delete')
+
         code = r'''
             #include <stdio.h>
             #include <stdlib.h>
@@ -255,11 +313,17 @@ class TestQuestionLists_Doubly:
 
 class TestQuestionLists_Errors:
     """Тесты на обработку ошибок студентом"""
-    question = moodleInit(QuestionN2, seed=400, allowed_tasks=['1'])
+    question = moodleInit(QuestionN2, seed=400, allowed_tasks=['swap'])
+
+    def _force_swap_config(self):
+        self.question.config.operation = 'swap'
+        self.question.config.num_lists = 1
+        self.question.task_id = self.question.config.task_id
+        self.question._generate_list_values()
 
     def test_compile_error(self):
         """Должен выбрасываться CompilationError при синтаксической ошибке"""
-        self.question.task_id = '1'
+        self._force_swap_config()
         with pytest.raises(utility.CompilationError):
             self.question.test(r'''
                 #include <stdio.h>
@@ -271,7 +335,7 @@ class TestQuestionLists_Errors:
 
     def test_runtime_error(self):
         """Должен возвращаться Result.Fail при ошибке выполнения (сегфолт)"""
-        self.question.task_id = '1'
+        self._force_swap_config()
         assert self.question.test(r'''
             #include <stdio.h>
             int main() {
@@ -283,7 +347,7 @@ class TestQuestionLists_Errors:
 
     def test_wrong_answer(self):
         """Должен возвращаться Result.Fail при неверном выводе"""
-        self.question.task_id = '1'
+        self._force_swap_config()
         # Код просто выводит входной массив без перестановки
         code = r'''
             #include <stdio.h>

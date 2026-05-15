@@ -1,347 +1,268 @@
 from ..QuestionBase import QuestionBase, Result
 from ..utility import CProgramRunner, CompilationError, ExecutionError
+from dataclasses import dataclass
+from typing import Literal, Optional, List
 import random
 
 
-AVAILABLE_TASKS = [
-    {'id': '1',
-        'name': 'Перестановка двух узлов (один список)', 'list_type': 'singly'},
-    {'id': '2',
-        'name': 'Перестановка узлов (два списка)', 'list_type': 'singly'},
-    {'id': '3', 'name': 'Разворот списка', 'list_type': 'singly'},
-    {'id': '4', 'name': 'Циклический сдвиг', 'list_type': 'singly'},
-    {'id': '5', 'name': 'Вставка в отсортированный двусвязный список',
-        'list_type': 'doubly'},
-    {'id': '6', 'name': 'Удаление узлов по значению', 'list_type': 'doubly'},
-]
+@dataclass
+class TaskConfig:
+    """Конфигурация задания, генерируемая из независимых параметров"""
+    list_type: Literal['singly', 'doubly']
+    num_lists: int
+    operation: Literal['swap', 'reverse', 'shift', 'insert', 'delete']
 
-LIST_LENGTH_RANGE = (3, 15)
-VALUE_RANGE = (-100, 100)
-SHIFT_RANGE = (0, 20)
+    swap_indices: Optional[tuple[int, int]] = None
+    shift_k: Optional[int] = None
+    shift_direction: Optional[Literal['left', 'right']] = None
+    insert_value: Optional[int] = None
+    target_value: Optional[int] = None
+    pos1: Optional[int] = None
+    pos2: Optional[int] = None
+
+    list_length: int = 5
+    list2_length: int = 5
+    is_sorted: bool = False
+    allow_duplicates: bool = True
+    may_be_empty: bool = False
+
+    @property
+    def task_id(self) -> str:
+        # Генерирует уникальный ID задания для совместимости с внешним кодом
+        lt = 's' if self.list_type == 'singly' else 'd'
+        return f"{lt}{self.num_lists}_{self.operation}"
+
+    @property
+    def name(self) -> str:
+        # Возвращает человекочитаемое название операции
+        names = {
+            'swap': 'Перестановка элементов',
+            'reverse': 'Разворот списка',
+            'shift': 'Циклический сдвиг',
+            'insert': 'Вставка в отсортированный список',
+            'delete': 'Удаление элементов по значению',
+        }
+        suffix = ' (два списка)' if self.num_lists == 2 else ''
+        return f"{names.get(self.operation, self.operation)}{suffix}"
+
+
+class TaskConfigGenerator:
+    # Диапазоны для генерации случайных параметров тестов
+    LIST_LENGTH_RANGE = (3, 15)
+    VALUE_RANGE = (-100, 100)
+    SHIFT_RANGE = (0, 20)
+
+    def __init__(self, seed: int, strictness: float = 1.0):
+        # Инициализация генератора с seed и уровнем строгости strictness
+        self.seed = seed
+        self.strictness = strictness
+        random.seed(seed)
+
+    def generate(self,
+                 list_type_override: Optional[str] = None,
+                 allowed_operations: Optional[List[str]] = None,
+                 num_lists_override: Optional[int] = None) -> TaskConfig:
+        # Генерирует конфигурацию задания с учетом ограничений и весов операций
+        random.seed(self.seed)
+
+        if list_type_override:
+            list_type = list_type_override
+        else:
+            # чем больше strictness, тем выше вероятность двусвязных списков
+            weights = [10 - int(self.strictness * 6), int(self.strictness * 6)]
+            list_type = random.choices(
+                ['singly', 'doubly'], weights=weights)[0]
+
+        if list_type == 'doubly':
+            num_lists = 1
+        elif num_lists_override is not None:
+            num_lists = num_lists_override
+        else:
+            num_lists = 1 if random.random() > self.strictness * 0.3 else 2
+
+        available_ops = self._get_available_ops(list_type, num_lists)
+        if allowed_operations:
+            available_ops = [
+                op for op in available_ops if op in allowed_operations]
+        if not available_ops:
+            available_ops = ['reverse']
+
+        weights = [2 if op == 'reverse' else 3 for op in available_ops]
+        operation = random.choices(available_ops, weights=weights)[0]
+
+        list_length = random.randint(*self.LIST_LENGTH_RANGE)
+        is_sorted = (operation in ['insert', 'delete']
+                     ) and random.random() < 0.7
+
+        config = TaskConfig(
+            list_type=list_type,
+            num_lists=num_lists,
+            operation=operation,
+            list_length=list_length,
+            is_sorted=is_sorted,
+            allow_duplicates=True,
+            may_be_empty=(operation in ['reverse', 'shift', 'delete']),
+        )
+
+        self._populate_operation_params(config)
+
+        if config.num_lists == 2:
+            config.list2_length = random.randint(2, 10)
+
+        return config
+
+    def _get_available_ops(self, list_type: str, num_lists: int) -> List[str]:
+        # Возвращает список допустимых операций для данной комбинации типа и количества списков
+        ops = []
+        if list_type == 'singly':
+            if num_lists == 1:
+                ops.extend(['swap', 'reverse', 'shift'])
+            elif num_lists == 2:
+                ops.append('swap')
+        elif list_type == 'doubly':
+            ops.extend(['insert', 'delete'])
+        return ops if ops else ['reverse']
+
+    def _populate_operation_params(self, config: TaskConfig):
+        # Заполняет специфичные параметры операции (позиции, K, значения и т.д.)
+        if config.operation == 'swap':
+            if config.num_lists == 1:
+                n = max(2, config.list_length)
+                i = random.randint(1, n - 1)
+                j = random.randint(i + 1, n)
+                config.swap_indices = (i, j)
+            else:
+                config.pos1 = random.randint(1, max(1, config.list_length))
+                config.pos2 = random.randint(1, max(1, config.list2_length))
+        elif config.operation == 'shift':
+            config.shift_k = random.randint(*self.SHIFT_RANGE)
+            config.shift_direction = random.choice(['left', 'right'])
+        elif config.operation == 'insert':
+            config.is_sorted = True
+            config.insert_value = random.randint(*self.VALUE_RANGE)
+        elif config.operation == 'delete':
+            config.target_value = random.randint(*self.VALUE_RANGE)
+
 
 class QuestionN2(QuestionBase):
     questionName = 'Задание 2, Работа со связными списками'
 
-    class _SinglyNode:
-        """Узел односвязного списка"""
-        def __init__(self, data):
-            self.data = data
-            self.next = None
-
-    class _DoublyNode:
-        """Узел двусвязного списка"""
-        def __init__(self, data):
-            self.data = data
-            self.prev = None
-            self.next = None
-
-    @staticmethod
-    def _build_singly(values):
-        """Построение односвязного списка из списка значений"""
-        if not values:
-            return None
-        head = QuestionN2._SinglyNode(values[0])
-        current = head
-        for val in values[1:]:
-            current.next = QuestionN2._SinglyNode(val)
-            current = current.next
-        return head
-
-    @staticmethod
-    def _to_values_singly(head):
-        """Преобразовать односвязный список в список значений"""
-        result = []
-        current = head
-        while current:
-            result.append(current.data)
-            current = current.next
-        return result
-
-    @staticmethod
-    def _build_doubly(values):
-        """Построить двусвязный список из списка значений"""
-        if not values:
-            return None
-        head = QuestionN2._DoublyNode(values[0])
-        current = head
-        for val in values[1:]:
-            new_node = QuestionN2._DoublyNode(val)
-            current.next = new_node
-            new_node.prev = current
-            current = new_node
-        return head
-
-
-    @staticmethod
-    def _to_values_doubly(head):
-        """Преобразовать двусвязный список в список значений с проверкой prev-указателей"""
-        if not head:
-            return []
-        result = []
-        current = head
-        # Проверка: у головы prev должен быть None
-        if head.prev is not None:
-            raise ValueError("Head node has non-None prev pointer")
-        while current:
-            result.append(current.data)
-            # Проверка обратного указателя
-            if current.next and current.next.prev is not current:
-                raise ValueError(
-                    f"Broken prev link at node with data {current.data}")
-            current = current.next
-        return result
-
-    # Эталонные реализации функций для проверки
-    @staticmethod
-    def _ref_swap_nodes_singly(head, i, j):
-        """Перестановка узлов с индексами i и j (1-индексация)"""
-        if i == j or not head:
-            return head
-        if i > j:
-            i, j = j, i
-        # поиск узлов и их предков
-        prev_i = None
-        node_i = head
-        for _ in range(1, i):
-            prev_i = node_i
-            node_i = node_i.next
-        prev_j = None
-        node_j = head
-        for _ in range(1, j):
-            prev_j = node_j
-            node_j = node_j.next
-        if not node_i or not node_j:
-            return head
-        # особый случай: соседние узлы (i+1 == j)
-        if node_i.next is node_j:
-            if prev_i:
-                prev_i.next = node_j
-            else:
-                head = node_j  # node_j становится новой головой
-            node_i.next = node_j.next
-            node_j.next = node_i
-        else:
-            next_i, next_j = node_i.next, node_j.next
-            if prev_i:
-                prev_i.next = node_j
-            else:
-                head = node_j
-            if prev_j:
-                prev_j.next = node_i
-            else:
-                head = node_i
-            node_i.next = next_j
-            node_j.next = next_i
-        return head
-
-    @staticmethod
-    def _ref_reverse_singly(head):
-        """Разворот односвязного списка"""
-        prev = None
-        current = head
-        while current:
-            next_node = current.next
-            current.next = prev
-            prev = current
-            current = next_node
-        return prev
-
-    @staticmethod
-    def _ref_cyclic_shift_singly(head, k, direction):
-        """
-        Циклический сдвиг односвязного списка
-        direction: 'left' или 'right'
-        """
-        values = QuestionN2._to_values_singly(head)
-        if not values:
-            return None
-        n = len(values)
-        if n <= 1:
-            return head
-        k = k % n
-        if k == 0:
-            return head
-        if direction == 'right':
-            shifted = values[-k:] + values[:-k]
-        else:  # left
-            shifted = values[k:] + values[:k]
-        return QuestionN2._build_singly(shifted)
-
-    @staticmethod
-    def _ref_swap_two_lists(head1, head2, pos1, pos2):
-        """
-        Обмен узлами между двумя односвязными списками
-        Возвращает кортеж (new_head1, new_head2)
-        """
-        if not head1 or not head2:
-            return head1, head2
-        # поиск node1 и prev1 в списке 1
-        prev1 = None
-        node1 = head1
-        for _ in range(1, pos1):
-            if node1:
-                prev1 = node1
-                node1 = node1.next
-        # поиск node2 и prev2 в списке 2
-        prev2 = None
-        node2 = head2
-        for _ in range(1, pos2):
-            if node2:
-                prev2 = node2
-                node2 = node2.next
-        if not node1 or not node2:
-            return head1, head2
-        next1, next2 = node1.next, node2.next
-        if prev1:
-            prev1.next = node2
-        else:
-            head1 = node2  # node2 становится новой головой списка 1
-        node2.next = next1
-        if prev2:
-            prev2.next = node1
-        else:
-            head2 = node1  # node1 становится новой головой списка 2
-        node1.next = next2
-        return head1, head2
-
-    @staticmethod
-    def _ref_insert_sorted_doubly(head, value):
-        """Вставка в отсортированный двусвязный список"""
-        new_node = QuestionN2._DoublyNode(value)
-        if not head:
-            return new_node
-        # вставка в начало
-        if value <= head.data:
-            new_node.next = head
-            head.prev = new_node
-            return new_node
-        # поиск позиции вставки
-        current = head
-        while current.next and current.next.data < value:
-            current = current.next
-        # вставка после current + вставка в конец обрабатывается тут
-        new_node.next = current.next
-        new_node.prev = current
-        if current.next:
-            current.next.prev = new_node
-        current.next = new_node
-        return head
-
-    @staticmethod
-    def _ref_delete_by_value_doubly(head, target):
-        """Удаление всех узлов со значением target из двусвязного списка"""
-        current = head
-        # удаляем совпадения в начале списка
-        while current and current.data == target:
-            head = current.next
-            if head:
-                head.prev = None
-            current = head
-        # удаляем в середине и конце
-        current = head
-        while current and current.next:
-            if current.next.data == target:
-                current.next = current.next.next
-                if current.next:
-                    current.next.prev = current
-            else:
-                current = current.next
-        return head
-
     def __init__(self, *, seed: int, strictness: float = 1.0,
                  allowed_tasks: list = None, list_type_override: str = None):
-        """
-        параметры:
-        seed - сид для воспроизводимости рандома
-        strictness - уровень строкости (0.0 - 1.0), влияет на количество тестов
-        allowed_tasks - cписок разрешенных id заданий (если None — все доступны)
-        list_type_override - тип списка: 'singly' или 'doubly'
-        """
+        # Инициализация задания: генерация конфигурации и значений списков
         super().__init__(seed=seed, strictness=strictness,
                          allowed_tasks=allowed_tasks, list_type_override=list_type_override)
         self.strictness = strictness
-        random.seed(seed)
 
-        # выбор типа задания
-        tasks_pool = [
-            t for t in AVAILABLE_TASKS if allowed_tasks is None or t['id'] in allowed_tasks]
-        if list_type_override:
-            tasks_pool = [t for t in tasks_pool if t['list_type']
-                          == list_type_override]
+        id_to_op = {'1': 'swap', '2': 'swap', '3': 'reverse',
+                    '4': 'shift', '5': 'insert', '6': 'delete'}
+        allowed_ops = allowed_tasks
+        if allowed_tasks:
+            allowed_ops = [id_to_op.get(t, t) for t in allowed_tasks]
 
-        self.task_config = random.choice(tasks_pool)
-        self.task_id = self.task_config['id']
-        self.list_type = self.task_config['list_type']
+        config_gen = TaskConfigGenerator(seed, strictness)
+        self.config = config_gen.generate(
+            list_type_override=list_type_override,
+            allowed_operations=allowed_ops
+        )
 
-        self._generate_task_parameters()
+        self.task_id = self.config.task_id
+        self.list_type = self.config.list_type
+        self._generate_list_values()
 
-    def _generate_task_parameters(self):
-        """Генерация случайных параметров для текущего задания"""
-        self.list_length = random.randint(*LIST_LENGTH_RANGE)
-        self.list_values = [random.randint(
-            *VALUE_RANGE) for _ in range(self.list_length)]
-        
-        if self.task_id == '1':  # обмен значениям в одном списке
-            self.pos_i = random.randint(1, max(1, self.list_length - 1))
-            self.pos_j = random.randint(self.pos_i + 1, self.list_length)
-            
-        elif self.task_id == '2':  # обмен значениям в двух списках
-            self.list2_length = random.randint(2, 10)
-            self.list2_values = [random.randint(
-                *VALUE_RANGE) for _ in range(self.list2_length)]
-            self.pos1 = random.randint(1, self.list_length)
-            self.pos2 = random.randint(1, self.list2_length)
-            
-        elif self.task_id == '3':  # разворот
-            pass
-        
-        elif self.task_id == '4':  # сдвиг
-            self.shift_k = random.randint(*SHIFT_RANGE)
-            self.shift_direction = random.choice(['left', 'right'])
-            
-        elif self.task_id == '5':  # вставка (двусвязный)
-            self.list_values.sort()
-            self.insert_value = random.randint(*VALUE_RANGE)
-            
-        elif self.task_id == '6':  # удаление (двусвязный)
-            if self.list_values:
-                self.target_value = random.choice(self.list_values)
-                if random.random() < 0.8 and self.list_length > 1:
-                    positions = random.sample(range(self.list_length),
-                                              k=min(random.randint(1, 3), self.list_length))
-                    for pos in positions:
-                        self.list_values[pos] = self.target_value
+    def _generate_list_values(self):
+        # Генерирует значения списков с учетом сортировки и наличия target для delete
+        if self.config.is_sorted:
+            self.list_values = sorted([
+                random.randint(*TaskConfigGenerator.VALUE_RANGE)
+                for _ in range(self.config.list_length)
+            ])
+        else:
+            self.list_values = [
+                random.randint(*TaskConfigGenerator.VALUE_RANGE)
+                for _ in range(self.config.list_length)
+            ]
+
+        # Для delete: гарантируем, что target_value встречается в списке
+        if self.config.operation == 'delete' and self.config.target_value is not None:
+            if self.list_values and random.random() < 0.8:
+                positions = random.sample(
+                    range(len(self.list_values)),
+                    k=min(random.randint(1, 3), len(self.list_values))
+                )
+                for pos in positions:
+                    self.list_values[pos] = self.config.target_value
+
+        if self.config.num_lists == 2:
+            self.list2_values = [
+                random.randint(*TaskConfigGenerator.VALUE_RANGE)
+                for _ in range(self.config.list2_length)
+            ]
+
+    def _apply_edge_case(self, test_num: int):
+        # Модифицирует параметры конфигурации для краевых случаев (пустой список, минимум элементов и т.д.)
+        cfg = self.config
+        if test_num == 0:
+            if cfg.operation == 'swap' and cfg.num_lists == 1:
+                cfg.list_length = 2
+                cfg.swap_indices = (1, 2)
+            elif cfg.operation == 'swap' and cfg.num_lists == 2:
+                cfg.list_length = 1
+                cfg.list2_length = 1
+                cfg.pos1, cfg.pos2 = 1, 1
+            elif cfg.operation == 'shift':
+                cfg.list_length = 1
+                cfg.shift_k = 0
             else:
-                self.target_value = 0
+                cfg.list_length = 1
+        elif test_num == 1:
+            if cfg.operation in ['reverse', 'shift', 'delete']:
+                cfg.list_length = 0
+                self.list_values = []
+                if cfg.operation == 'delete':
+                    cfg.target_value = 0
+            elif cfg.operation == 'insert':
+                cfg.list_length = 0
+                self.list_values = []
+        elif test_num == 2 and cfg.operation == 'shift':
+            cfg.shift_k = 0 if random.random() < 0.5 else cfg.list_length * 3
+        elif test_num == 3 and cfg.operation == 'swap' and cfg.num_lists == 1 and cfg.list_length >= 2:
+            i = random.randint(1, cfg.list_length - 1)
+            cfg.swap_indices = (i, i + 1)
+        elif test_num == 4 and cfg.operation == 'swap' and cfg.num_lists == 1 and cfg.list_length >= 2:
+            cfg.swap_indices = (1, cfg.list_length)
+        elif test_num == 5 and cfg.operation == 'swap' and cfg.num_lists == 1 and cfg.list_length >= 2:
+            cfg.swap_indices = (1, 2)
+        elif test_num == 6 and cfg.operation == 'swap' and cfg.num_lists == 1 and cfg.list_length >= 2:
+            cfg.swap_indices = (cfg.list_length - 1, cfg.list_length)
 
     def _get_input_format_description(self) -> str:
+        # Формирует HTML-описание формата входных данных для текущего типа задания
+        cfg = self.config
         base = "<p><b>Формат входных данных:</b></p><ul>"
-        if self.list_type == 'singly':
+        if cfg.list_type == 'singly':
             base += "<li>Тип списка: <code>односвязный</code></li>"
         else:
             base += "<li>Тип списка: <code>двусвязный</code> (поля <code>prev</code> и <code>next</code>)</li>"
 
-        if self.task_id in ['1', '3', '4']:
-            base += "<li>Число <b>n</b> — количество элементов</li>"
-            base += "<li><b>n целых чисел</b> — значения узлов</li>"
-            if self.task_id == '1':
-                base += "<li>Две позиции <b>i j</b> (индексация начинается с 1)</li>"
-            elif self.task_id == '4':
-                base += "<li>Два числа: <b>K</b> (величина сдвига) и <b>direction</b> (0 = влево, 1 = вправо)</li>"
-
-        elif self.task_id == '2':
+        if cfg.operation == 'swap' and cfg.num_lists == 2:
             base += "<li>Число <b>n</b> — количество элементов первого списка</li>"
             base += "<li><b>n целых чисел</b> — значения первого списка</li>"
             base += "<li>Число <b>m</b> — количество элементов второго списка</li>"
             base += "<li><b>m целых чисел</b> — значения второго списка</li>"
             base += "<li>Две позиции: <b>pos1 pos2</b></li>"
-
-        elif self.task_id == '5':
+        elif cfg.operation in ['swap', 'reverse', 'shift']:
+            base += "<li>Число <b>n</b> — количество элементов</li>"
+            base += "<li><b>n целых чисел</b> — значения узлов</li>"
+            if cfg.operation == 'swap' and cfg.num_lists == 1:
+                base += "<li>Две позиции <b>i j</b> (индексация начинается с 1)</li>"
+            elif cfg.operation == 'shift':
+                base += "<li>Два числа: <b>K</b> (величина сдвига) и <b>direction</b> (0 = влево, 1 = вправо)</li>"
+        elif cfg.operation == 'insert':
             base += "<li>Число <b>n</b> — количество элементов</li>"
             base += "<li><b>n отсортированных целых чисел</b> — значения списка</li>"
             base += "<li>Целое число — значение для вставки</li>"
-
-        elif self.task_id == '6':
+        elif cfg.operation == 'delete':
             base += "<li>Число <b>n</b> — количество элементов</li>"
             base += "<li><b>n целых чисел</b> — значения списка</li>"
             base += "<li>Целое число <b>target</b> — значение для удаления</li>"
@@ -350,7 +271,8 @@ class QuestionN2(QuestionBase):
         return base
 
     def _get_output_format_description(self) -> str:
-        if self.task_id == '2':
+        # Формирует HTML-описание формата выходных данных
+        if self.config.operation == 'swap' and self.config.num_lists == 2:
             return ("<p><b>Формат выходных данных:</b></p>"
                     "<ol><li>Значения первого списка через пробел</li>"
                     "<li>Значения второго списка через пробел (новая строка)</li></ol>")
@@ -358,46 +280,32 @@ class QuestionN2(QuestionBase):
                 "<p>Значения узлов результирующего списка через пробел в одну строку.</p>")
 
     def _get_task_specific_condition(self) -> str:
-        if self.task_id == '1':
-            return f'''
-                <p>Поменяйте местами узлы на позициях <b>{self.pos_i}</b> и <b>{self.pos_j}</b> 
-                (нумерация с 1), сохраняя связность остальных элементов.</p>
-                <p><b>Важно:</b> корректно обрабатывайте головной/хвостовой узел и соседние позиции.</p>
-            '''
-        elif self.task_id == '2':
-            return f'''
-                <p>Поменяйте узел на позиции <b>{self.pos1}</b> первого списка с узлом на позиции 
-                <b>{self.pos2}</b> второго списка.</p>
-                <p><b>Важно:</b> обновите указатели на головы, если затронуты первые элементы.</p>
-            '''
-        elif self.task_id == '3':
-            return '''
-                <p>Выполните полное обращение списка: порядок узлов должен стать 
-                строго противоположным исходному.</p>
-                <p><b>Важно:</b> корректно обрабатывайте пустой список и список из одного элемента.</p>
-            '''
-        elif self.task_id == '4':
-            dir_ru = "влево" if self.shift_direction == 'left' else "вправо"
-            return f'''
-                <p>Выполните циклический сдвиг на <b>K = {self.shift_k}</b> позиций 
-                <b>{dir_ru}</b>.</p>
-                <p><b>Важно:</b> если K ≥ N, используйте <b>K % N</b>.</p>
-            '''
-        elif self.task_id == '5':
-            return f'''
-                <p>Вставьте узел со значением <b>{self.insert_value}</b> в отсортированный список 
-                так, чтобы неубываниющий порядок сохранился.</p>
-            '''
-        elif self.task_id == '6':
-            return f'''
-                <p>Удалите <b>все</b> узлы со значением <code>data = {self.target_value}</code>.</p>
-                <p><b>Важно:</b> обновите <code>prev</code>/<code>next</code>, верните <code>NULL</code>, 
-                если список стал пустым.</p>
-            '''
+        # Возвращает текст условия задачи
+        cfg = self.config
+        if cfg.operation == 'swap':
+            if cfg.num_lists == 1:
+                return '''<p>Поменяйте местами узлы на заданных позициях <b>i</b> и <b>j</b> (нумерация с 1), сохраняя связность остальных элементов.</p>
+                <p><b>Важно:</b> корректно обрабатывайте головной/хвостовой узел и соседние позиции.</p>'''
+            else:
+                return '''<p>Поменяйте узел на заданной позиции <b>pos1</b> первого списка с узлом на заданной позиции <b>pos2</b> второго списка.</p>
+                <p><b>Важно:</b> обновите указатели на головы, если затронуты первые элементы.</p>'''
+        elif cfg.operation == 'reverse':
+            return '''<p>Выполните полное обращение списка: порядок узлов должен стать строго противоположным исходному.</p>
+                <p><b>Важно:</b> корректно обрабатывайте пустой список и список из одного элемента.</p>'''
+        elif cfg.operation == 'shift':
+            return '''<p>Выполните циклический сдвиг списка на заданное количество позиций <b>K</b> в заданном направлении.</p>
+                <p><b>Важно:</b> если K ≥ N, используйте <b>K % N</b>.</p>'''
+        elif cfg.operation == 'insert':
+            return '''<p>Вставьте узел с заданным значением в отсортированный список так, чтобы неубывающий порядок сохранился.</p>'''
+        elif cfg.operation == 'delete':
+            return '''<p>Удалите <b>все</b> узлы с заданным значением <code>target</code>.</p>
+                <p><b>Важно:</b> обновите <code>prev</code>/<code>next</code>, верните <code>NULL</code>, если список стал пустым.</p>'''
         return ''
-    
+
     @property
     def questionText(self) -> str:
+        # Формирует полный текст задачи с примером
+        cfg = self.config
         examples = {
             '1': ('4\n10 20 30 40\n2 4', '10 40 30 20', 'Обмен позиций 2 и 4'),
             '2': ('3\n1 2 3\n2\n10 20\n2 1', '1 10 3\n2 20', 'Обмен между списками'),
@@ -406,7 +314,22 @@ class QuestionN2(QuestionBase):
             '5': ('4\n1 3 5 7\n4', '1 3 4 5 7', 'Вставка в отсортированный'),
             '6': ('5\n2 4 2 5 2\n2', '4 5', 'Удаление всех 2'),
         }
-        inp, out, note = examples.get(self.task_id, ('...', '...', '...'))
+
+        # Выбор ключа примера на основе операции и количества списков
+        if cfg.operation == 'swap':
+            example_key = '2' if cfg.num_lists == 2 else '1'
+        elif cfg.operation == 'reverse':
+            example_key = '3'
+        elif cfg.operation == 'shift':
+            example_key = '4'
+        elif cfg.operation == 'insert':
+            example_key = '5'
+        elif cfg.operation == 'delete':
+            example_key = '6'
+        else:
+            example_key = '3'
+
+        inp, out, note = examples.get(example_key, ('...', '...', '...'))
 
         return f'''
 <p>Язык: <b>C</b> (компиляция <code>gcc</code>), тип списка: <b>{"двусвязный" if self.list_type == "doubly" else "односвязный"}</b>.</p>
@@ -436,6 +359,7 @@ class QuestionN2(QuestionBase):
 
     @property
     def preloadedCode(self) -> str:
+        # Возвращает шаблон кода на C, который подставляется в редактор для студента
         return '''#include <stdio.h>
 #include <stdlib.h>
 
@@ -445,126 +369,97 @@ int main() {
 }
 '''
 
+    @staticmethod
+    def _ref_swap_elements(values, i, j):
+        # Эталон: перестановка элементов с индексами i и j (1-индексация)
+        if not values:
+            return []
+        lst = values[:]
+        if 0 <= i-1 < len(lst) and 0 <= j-1 < len(lst):
+            lst[i-1], lst[j-1] = lst[j-1], lst[i-1]
+        return lst
+
+    @staticmethod
+    def _ref_reverse(values):
+        # Эталон: разворот списка
+        return values[::-1]
+
+    @staticmethod
+    def _ref_cyclic_shift(values, k, direction):
+        # Эталон: циклический сдвиг списка на k позиций в заданном направлении
+        if not values:
+            return []
+        n = len(values)
+        k = k % n
+        if k == 0:
+            return values[:]
+        return values[-k:] + values[:-k] if direction == 'right' else values[k:] + values[:k]
+
+    @staticmethod
+    def _ref_swap_two_lists(list1, list2, pos1, pos2):
+        # Эталон: обмен элементами между двумя списками на заданных позициях
+        if not list1 or not list2:
+            return list1[:], list2[:]
+        l1, l2 = list1[:], list2[:]
+        if 0 <= pos1-1 < len(l1) and 0 <= pos2-1 < len(l2):
+            l1[pos1-1], l2[pos2-1] = l2[pos2-1], l1[pos1-1]
+        return l1, l2
+
+    @staticmethod
+    def _ref_insert_sorted(values, value):
+        # Эталон: вставка значения в отсортированный список с сохранением порядка
+        lst = values[:]
+        idx = 0
+        while idx < len(lst) and lst[idx] < value:
+            idx += 1
+        lst.insert(idx, value)
+        return lst
+
+    @staticmethod
+    def _ref_delete_by_value(values, target):
+        # Эталон: удаление всех элементов со значением target
+        return [x for x in values if x != target]
+
     def _generate_input(self) -> str:
-        """Формирует входные данные для C-программы студента"""
-        if self.task_id == '1':
-            return (f"{self.list_length}\n" +
-                    " ".join(map(str, self.list_values)) + "\n" +
-                    f"{self.pos_i} {self.pos_j}\n")
-        elif self.task_id == '2':
-            return (f"{self.list_length}\n" +
-                    " ".join(map(str, self.list_values)) + "\n" +
-                    f"{self.list2_length}\n" +
-                    " ".join(map(str, self.list2_values)) + "\n" +
-                    f"{self.pos1} {self.pos2}\n")
-        elif self.task_id == '3':
-            return f"{self.list_length}\n" + " ".join(map(str, self.list_values)) + "\n"
-        elif self.task_id == '4':
-            direction_code = 0 if self.shift_direction == 'left' else 1
-            return (f"{self.list_length}\n" +
-                    " ".join(map(str, self.list_values)) + "\n" +
-                    f"{self.shift_k} {direction_code}\n")
-        elif self.task_id == '5':
-            return (f"{self.list_length}\n" +
-                    " ".join(map(str, self.list_values)) + "\n" +
-                    f"{self.insert_value}\n")
-        elif self.task_id == '6':
-            return (f"{self.list_length}\n" +
-                    " ".join(map(str, self.list_values)) + "\n" +
-                    f"{self.target_value}\n")
-
-    def _compute_expected_output(self) -> str:
-        """Вычисляет ожидаемый вывод через эталонную Python-реализацию"""
-        if self.task_id == '1':
-            head = self._build_singly(self.list_values)
-            head = self._ref_swap_nodes_singly(head, self.pos_i, self.pos_j)
-            return " ".join(map(str, self._to_values_singly(head)))
-
-        elif self.task_id == '2':
-            h1 = self._build_singly(self.list_values)
-            h2 = self._build_singly(self.list2_values)
-            h1, h2 = self._ref_swap_two_lists(h1, h2, self.pos1, self.pos2)
-            return f"{' '.join(map(str, self._to_values_singly(h1)))}\n{' '.join(map(str, self._to_values_singly(h2)))}"
-
-        elif self.task_id == '3':
-            head = self._build_singly(self.list_values)
-            head = self._ref_reverse_singly(head)
-            return " ".join(map(str, self._to_values_singly(head)))
-
-        elif self.task_id == '4':
-            head = self._build_singly(self.list_values)
-            head = self._ref_cyclic_shift_singly(
-                head, self.shift_k, self.shift_direction)
-            return " ".join(map(str, self._to_values_singly(head)))
-
-        elif self.task_id == '5':
-            head = self._build_doubly(self.list_values)
-            head = self._ref_insert_sorted_doubly(head, self.insert_value)
-            return " ".join(map(str, self._to_values_doubly(head)))
-
-        elif self.task_id == '6':
-            head = self._build_doubly(self.list_values)
-            head = self._ref_delete_by_value_doubly(head, self.target_value)
-            values = self._to_values_doubly(head)
-            return " ".join(map(str, values)) if values else ""
-
+        # Формирует строку входных данных для запуска C-программы студента
+        cfg = self.config
+        if cfg.operation == 'swap' and cfg.num_lists == 1:
+            i, j = cfg.swap_indices
+            return f"{cfg.list_length}\n{' '.join(map(str, self.list_values))}\n{i} {j}\n"
+        elif cfg.operation == 'swap' and cfg.num_lists == 2:
+            return f"{cfg.list_length}\n{' '.join(map(str, self.list_values))}\n{cfg.list2_length}\n{' '.join(map(str, self.list2_values))}\n{cfg.pos1} {cfg.pos2}\n"
+        elif cfg.operation == 'reverse':
+            return f"{cfg.list_length}\n{' '.join(map(str, self.list_values))}\n"
+        elif cfg.operation == 'shift':
+            d = 0 if cfg.shift_direction == 'left' else 1
+            return f"{cfg.list_length}\n{' '.join(map(str, self.list_values))}\n{cfg.shift_k} {d}\n"
+        elif cfg.operation == 'insert':
+            return f"{cfg.list_length}\n{' '.join(map(str, self.list_values))}\n{cfg.insert_value}\n"
+        elif cfg.operation == 'delete':
+            return f"{cfg.list_length}\n{' '.join(map(str, self.list_values))}\n{cfg.target_value}\n"
         return ""
 
-    def _generate_edge_case(self, test_num: int):
-        """Модифицирует параметры для краевых случаев"""
-        if test_num == 0:  # минимальный допустимый список
-            if self.task_id == '1':  # обмен узлов: нужно минимум 2 элемента
-                self.list_length = 2
-                self.list_values = [random.randint(
-                    *VALUE_RANGE) for _ in range(2)]
-                self.pos_i, self.pos_j = 1, 2
-            elif self.task_id == '2':  # два списка
-                self.list_length = 1
-                self.list_values = [random.randint(*VALUE_RANGE)]
-                self.list2_length = 1
-                self.list2_values = [random.randint(*VALUE_RANGE)]
-                self.pos1, self.pos2 = 1, 1
-            elif self.task_id == '4':  # сдвиг
-                self.list_length = 1
-                self.list_values = [random.randint(*VALUE_RANGE)]
-                self.shift_k = 0
-            else:  # задания 3, 5, 6 допускают 1 элемент
-                self.list_length = 1
-                self.list_values = [random.randint(*VALUE_RANGE)]
-
-        elif test_num == 1:  # пустой список (где это допустимо)
-            if self.task_id in ['3', '4', '6']:
-                self.list_length = 0
-                self.list_values = []
-                if self.task_id == '6':
-                    self.target_value = 0
-            elif self.task_id == '5':  # вставка в пустой список
-                self.list_length = 0
-                self.list_values = []
-                self.insert_value = random.randint(*VALUE_RANGE)
-                
-        elif test_num == 2:  # K = 0 или K >= n для сдвига
-            if self.task_id == '4':
-                self.shift_k = 0 if random.random() < 0.5 else self.list_length * 3
-        
-        elif test_num == 3:  # соседние позиции для обмена
-            if self.task_id == '1' and self.list_length >= 2:
-                self.pos_i = random.randint(1, self.list_length - 1)
-                self.pos_j = self.pos_i + 1
-        
-        elif test_num == 4:  # обмен головы/хвоста
-            if self.task_id == '1' and self.list_length >= 2:
-                self.pos_i, self.pos_j = 1, self.list_length
-                
-        elif test_num == 5:  # обмен головы и второго элемента
-            if self.task_id == '1' and self.list_length >= 2:
-                self.pos_i, self.pos_j = 1, 2
-
-        elif test_num == 6:  # обмен предпоследнего и хвоста
-            if self.task_id == '1' and self.list_length >= 2:
-                self.pos_i, self.pos_j = self.list_length - 1, self.list_length
+    def _compute_expected_output(self) -> str:
+        # Вычисляет ожидаемый вывод через эталонные реализации на Python
+        cfg = self.config
+        if cfg.operation == 'swap' and cfg.num_lists == 1:
+            return " ".join(map(str, self._ref_swap_elements(self.list_values, *cfg.swap_indices)))
+        elif cfg.operation == 'swap' and cfg.num_lists == 2:
+            l1, l2 = self._ref_swap_two_lists(
+                self.list_values, self.list2_values, cfg.pos1, cfg.pos2)
+            return f"{' '.join(map(str, l1))}\n{' '.join(map(str, l2))}"
+        elif cfg.operation == 'reverse':
+            return " ".join(map(str, self._ref_reverse(self.list_values)))
+        elif cfg.operation == 'shift':
+            return " ".join(map(str, self._ref_cyclic_shift(self.list_values, cfg.shift_k, cfg.shift_direction)))
+        elif cfg.operation == 'insert':
+            return " ".join(map(str, self._ref_insert_sorted(self.list_values, cfg.insert_value)))
+        elif cfg.operation == 'delete':
+            return " ".join(map(str, self._ref_delete_by_value(self.list_values, cfg.target_value)))
+        return ""
 
     def test(self, code: str) -> Result.Ok | Result.Fail:
+        # Запускает код студента на серии тестов (обычных + краевых) и возвращает результат проверки
         try:
             program = CProgramRunner(code)
         except CompilationError as e:
@@ -572,36 +467,40 @@ int main() {
 
         min_tests, max_tests = 5, 25
         num_edge_cases = 7
-        num_tests = max(
-            int(min_tests + self.strictness * (max_tests - min_tests)),
-            num_edge_cases
-        )
-
+        num_tests = max(int(min_tests + self.strictness *
+                        (max_tests - min_tests)), num_edge_cases)
+        original_num_lists = self.config.num_lists
+        
         for test_num in range(num_tests):
-            # Воспроизводимая рандомизация
             random.seed(self.seed + test_num)
-            self._generate_task_parameters()
+            config_gen = TaskConfigGenerator(
+                self.seed + test_num, self.strictness)
+            self.config = config_gen.generate(
+                list_type_override=self.list_type,
+                allowed_operations=[self.config.operation],
+                num_lists_override=original_num_lists
+            )
+            self.task_id = self.config.task_id
 
-            # Применяем крайние случаи на первых итерациях
             if test_num < num_edge_cases:
-                self._generate_edge_case(test_num)
+                self._apply_edge_case(test_num)
 
-            # Генерация теста
+            self._generate_list_values()
             program_input = self._generate_input()
             expected_output = self._compute_expected_output()
 
             try:
                 student_output = program.run(program_input, timeout=5)
-                # Нормализация: убираем лишние пробелы/переносы для сравнения
+                student_output = student_output.replace(
+                    '\r\n', '\n').rstrip('\n')
+                expected_output = expected_output.replace(
+                    '\r\n', '\n').rstrip('\n')
                 if student_output.strip() != expected_output.strip():
                     return Result.Fail(program_input, expected_output, student_output)
             except ExecutionError as e:
                 return Result.Fail(program_input, expected_output, str(e))
             except ValueError as e:
-                return Result.Fail(
-                    program_input,
-                    expected_output,
-                    f"Structure validation error: {e}"
-                )
+                return Result.Fail(program_input, expected_output, f"Structure validation error: {e}")
 
         return Result.Ok()
+    
