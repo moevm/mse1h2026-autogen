@@ -95,7 +95,7 @@ class QuestionN5(QuestionBase):
 
         Возвращает кортеж (stdout_строка, словарь_файлов_после_запуска).
         """
-        with tempfile.TemporaryDirectory() as work_dir:
+        with tempfile.TemporaryDirectory(dir='.') as work_dir:
 
             # Создаём директории, если они нужны
             if initial_dirs:
