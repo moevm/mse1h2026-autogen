@@ -128,36 +128,55 @@ print(question.runTest("""{{{{ STUDENT_ANSWER | e('py') }}}}"""))
         rel_path = file.relative_to(SOURCE_PATH)
         module_path = '.'.join(rel_path.parent.parts)
 
-        # Конвертация узла arguments в массив keyword
-        keywords = [ast.keyword(arg='seed', value=ast.Constant(value=Ellipsis))]
-
-        if question_arguments is not None:
-            for kw_name, kw_value in zip(question_arguments.kwonlyargs, question_arguments.kw_defaults):
-                if kw_name.arg == 'seed':
-                    continue
-
-                kw_name.annotation = None
-                keywords.append(ast.keyword(arg=kw_name, value=kw_value))
-
-        # Создание куска кода с вызовом initTemplate со стандартными параметрами (полученными из кода конструктора)
-        call_node = ast.Call(func=ast.Attribute(value=ast.Name(id=question_class), attr='initTemplate'), args=[], keywords=keywords)
-        constructor_code = astor.to_source(call_node).rstrip()
-
-        # Подстановка в шаблоны кода
-        parameters_code = parameters_code_template.format(module_path=module_path, class_name=question_class, constructor_code=constructor_code).lstrip()
-        code = code_template.format(module_path=module_path, class_name=question_class).lstrip()
-
-        # Модификация xml-шаблона
-        xml_template.xpath('//question/name/text')[0].text = xml.CDATA(question_name)
-        xml_template.xpath('//templateparams')[0].text = xml.CDATA(parameters_code)
-        xml_template.xpath('//template')[0].text = xml.CDATA(code)
-
         # Путь вывода: подпакеты (кроме prog_questions) становятся подпапками dist/
         sub_path = rel_path.parent.relative_to('prog_questions')
         xml_output_dir = OUTPUT_PATH / sub_path
         xml_output_dir.mkdir(parents=True, exist_ok=True)
-        xml_output_path = xml_output_dir / f'{question_class}.xml'
-        xml_template.write(xml_output_path, xml_declaration=True, encoding='utf-8')
+
+        # Определяем, поддерживает ли класс параметр is_simple_task
+        has_simple_variant = question_arguments is not None and any(
+            arg.arg == 'is_simple_task' for arg in question_arguments.kwonlyargs
+        )
+
+        # Варианты сборки: (значение is_simple_task, суффикс файла, суффикс названия)
+        variants = [(None, '', '')] if not has_simple_variant else [
+            (True, '_Simple', ' (простое)'),
+            (False, '_Complex', ' (сложное)'),
+        ]
+
+        for simple_value, file_suffix, name_suffix in variants:
+            # Конвертация узла arguments в массив keyword
+            keywords = [ast.keyword(arg='seed', value=ast.Constant(value=Ellipsis))]
+
+            if question_arguments is not None:
+                for kw_name, kw_value in zip(question_arguments.kwonlyargs, question_arguments.kw_defaults):
+                    if kw_name.arg == 'seed':
+                        continue
+
+                    kw_name.annotation = None
+
+                    if kw_name.arg == 'is_simple_task' and simple_value is not None:
+                        value = ast.Constant(value=simple_value)
+                    else:
+                        value = kw_value
+
+                    keywords.append(ast.keyword(arg=kw_name, value=value))
+
+            # Создание куска кода с вызовом initTemplate со стандартными параметрами (полученными из кода конструктора)
+            call_node = ast.Call(func=ast.Attribute(value=ast.Name(id=question_class), attr='initTemplate'), args=[], keywords=keywords)
+            constructor_code = astor.to_source(call_node).rstrip()
+
+            # Подстановка в шаблоны кода
+            parameters_code = parameters_code_template.format(module_path=module_path, class_name=question_class, constructor_code=constructor_code).lstrip()
+            code = code_template.format(module_path=module_path, class_name=question_class).lstrip()
+
+            # Модификация xml-шаблона
+            xml_template.xpath('//question/name/text')[0].text = xml.CDATA(question_name + name_suffix)
+            xml_template.xpath('//templateparams')[0].text = xml.CDATA(parameters_code)
+            xml_template.xpath('//template')[0].text = xml.CDATA(code)
+
+            xml_output_path = xml_output_dir / f'{question_class}{file_suffix}.xml'
+            xml_template.write(xml_output_path, xml_declaration=True, encoding='utf-8')
 
     # Вывод информации о собранных задачах
     print("Задачи успешно собраны:")
