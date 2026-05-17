@@ -1,45 +1,11 @@
 from ..QuestionBase import QuestionBase, Result
-from ..utility import CProgramRunner, CompilationError, ExecutionError, InternalError
+from ..utility import CppProgramRunner, CompilationError, ExecutionError, InternalError
 import random
 from textwrap import dedent
 import subprocess
 import os
 import sys
 from collections import defaultdict, Counter
-
-
-class CppProgramRunner(CProgramRunner):
-    """Переопределяет только компиляцию для C++. Остальное наследуется от базового раннера."""
-    def _compile(self) -> str:
-        try:
-            src_path = os.path.join(self.tmp_dir.name, 'program.cpp')
-            with open(src_path, 'w', encoding='utf-8') as f:
-                f.write(self.c_code)
-
-            exec_ext = '.exe' if sys.platform == 'win32' else ''
-            exec_path = os.path.join(self.tmp_dir.name, f'program{exec_ext}')
-
-            compile_result = subprocess.run(
-                ['g++', src_path, '-o', exec_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-
-            if compile_result.returncode != 0:
-                error_msg = compile_result.stderr.decode('utf-8', errors='replace')
-                raise CompilationError(error_msg)
-
-            if not os.path.isfile(exec_path):
-                raise InternalError("Компиляция завершилась успешно, но файл не создан")
-
-            return exec_path
-        except CompilationError:
-            raise
-        except FileNotFoundError:
-            raise CompilationError("g++ not found in PATH. Install MinGW-w64.")
-        except Exception as e:
-            raise InternalError(f"Internal compilation error: {e}")
-
 
 # 4.1 Группировка по ключу
 class Task41:
