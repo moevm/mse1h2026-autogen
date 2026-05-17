@@ -477,123 +477,7 @@ class QuestionN1(QuestionBase):
  
         return variant_texts[self.variant]
 
-    _C_TEMPLATE_SINGLE = """
-    #include <stdio.h>
-    #include <regex.h>
-    #include <string.h>
-
-    void print_match(const char *line, regmatch_t *m, int nsub, const char *variant, const char *sub_variant, int is_whole) {{
-        int g = 0;
-        int start = m[0].rm_so;
-        int end = m[0].rm_eo;
-
-        if (strcmp(variant, "email") == 0 && strcmp(sub_variant, "full_email") != 0 && nsub == 0) {{
-            const char *at = strchr(line + start, '@');
-            if (at) {{
-                if (strcmp(sub_variant, "domain") == 0) {{
-                    start = (at - line) + 1;
-                }} else {{
-                    end = (at - line);
-                }}
-                goto print;
-            }}
-        }}
-
-        if (strcmp(variant, "url_path") == 0 && nsub == 0) {{
-            const char *sep = strstr(line + start, "://");
-            if (sep) {{
-                const char *sch_end = sep;
-                const char *rest = sep + 3;
-                const char *slash = strchr(rest, '/');
-                
-                if (strcmp(sub_variant, "scheme") == 0) {{
-                    end = (sch_end - line);
-                }} else if (strcmp(sub_variant, "domain") == 0) {{
-                    start = (rest - line);
-                    if (slash && slash < line + m[0].rm_eo) end = (slash - line);
-                    else end = m[0].rm_eo;
-                }} else if (strcmp(sub_variant, "path") == 0) {{
-                    if (slash && slash < line + m[0].rm_eo) {{
-                        start = (slash - line);
-                        end = m[0].rm_eo;
-                    }} else {{
-                        return; 
-                    }}
-                }}
-                goto print;
-            }}
-        }}
-
-        if (nsub > 0) {{
-            for (int i = 1; i <= nsub && i < 8; i++) {{
-                if (m[i].rm_so == m[0].rm_so && m[i].rm_eo == m[0].rm_eo) {{
-                    g = i;
-                    goto found;
-                }}
-            }}
-            if (is_whole) {{
-                g = 0;
-            }} else {{
-                for (int i = 1; i <= nsub && i < 8; i++) {{
-                    if (m[i].rm_so != -1) {{
-                        g = i;
-                        break;
-                    }}
-                }}
-            }}
-        }}
-    found:
-        start = m[g].rm_so;
-        end = m[g].rm_eo;
-
-    print:
-        if (strcmp(variant, "date_in_filename") == 0 && strcmp(sub_variant, "normalize_iso") == 0) {{
-            char date[64];
-            int len = end - start;
-            if (len > 63) len = 63;
-            if (len < 0) len = 0;
-            strncpy(date, line + start, len);
-            date[len] = '\\0';
-            
-            int y, m_val, d;
-            if (sscanf(date, "%d-%d-%d", &y, &m_val, &d) == 3 && y > 100) {{
-                printf("%04d-%02d-%02d\\n", y, m_val, d);
-            }} else if (sscanf(date, "%d-%d-%d", &m_val, &d, &y) == 3) {{
-                printf("%04d-%02d-%02d\\n", y, m_val, d);
-            }} else {{
-                fwrite(line + start, 1, len, stdout);
-                putchar('\\n');
-            }}
-        }} else {{
-            fwrite(line + start, 1, end - start, stdout);
-            putchar('\\n');
-        }}
-    }}
-
-    int main() {{
-        char line[4096];
-        regex_t re;
-        regmatch_t m[8];
-
-        if (regcomp(&re, "{regex}", REG_EXTENDED) != 0) {{
-            fprintf(stderr, "regex compilation failed\\n");
-            return 1;
-        }}
-
-        while (fgets(line, sizeof(line), stdin)) {{
-            size_t len = strlen(line);
-            if (len > 0 && line[len-1] == '\\n') line[len-1] = '\\0';
-
-            if (regexec(&re, line, 8, m, 0) == 0) {{
-                print_match(line, m, re.re_nsub, "{variant}", "{sub_variant}", {is_whole});
-            }}
-        }}
-        regfree(&re);
-        return 0;
-    }}
-    """
-
-    _C_TEMPLATE_MULTI_EMAIL = """
+    _C_TEMPLATE = """
     #include <stdio.h>
     #include <regex.h>
     #include <string.h>
@@ -608,102 +492,157 @@ class QuestionN1(QuestionBase):
             return 1;
         }}
 
+        int line_idx = 0;
         while (fgets(line, sizeof(line), stdin)) {{
             size_t len = strlen(line);
             if (len > 0 && line[len-1] == '\\n') line[len-1] = '\\0';
 
             char *pos = line;
+            int match_cnt = 0;
+            
             while (regexec(&re, pos, 8, m, 0) == 0) {{
-                char after = pos[m[0].rm_eo];
-                if (!((after >= 'A' && after <= 'Z') ||
-                    (after >= 'a' && after <= 'z'))) {{
-                    
-                    int start = m[0].rm_so;
-                    int end = m[0].rm_eo;
-
-                    if (strcmp("{variant}", "email") == 0 && strcmp("{sub_variant}", "full_email") != 0 && re.re_nsub == 0) {{
-                        const char *at = strchr(pos + start, '@');
-                        if (at) {{
-                            if (strcmp("{sub_variant}", "domain") == 0) {{
-                                start = (at - pos) + 1;
-                            }} else {{
-                                end = (at - pos);
-                            }}
-                            goto print_multi;
-                        }}
-                    }}
-
-                    int g = 0;
-                    if (re.re_nsub > 0) {{
-                        for (int i = 1; i <= (int)re.re_nsub && i < 8; i++) {{
-                            if (m[i].rm_so == m[0].rm_so && m[i].rm_eo == m[0].rm_eo) {{
-                                g = i;
-                                goto found_multi;
-                            }}
-                        }}
-                        if ({is_whole}) {{
-                            g = 0;
-                        }} else {{
-                            for (int i = 1; i <= (int)re.re_nsub && i < 8; i++) {{
-                                if (m[i].rm_so != -1) {{
-                                    g = i;
-                                    break;
-                                }}
-                            }}
-                        }}
-                    }}
-                found_multi:
-                    start = m[g].rm_so;
-                    end = m[g].rm_eo;
-                
-                print_multi:
-                    fwrite(pos + start, 1, end - start, stdout);
-                    putchar('\\n');
+                if (m[0].rm_so == m[0].rm_eo && match_cnt > 0) {{
+                    pos++;
+                    if (*pos == '\\0') break;
+                    continue;
                 }}
+
+                printf("MATCH\\t%d", line_idx);
+                
+                for (int i = 0; i <= (int)re.re_nsub && i < 8; i++) {{
+                    if (m[i].rm_so != -1) {{
+                        int global_so = (pos - line) + m[i].rm_so;
+                        int global_eo = (pos - line) + m[i].rm_eo;
+                        printf("\\t%d:%d", global_so, global_eo);
+                    }} else {{
+                        printf("\\t-1:-1");
+                    }}
+                }}
+                printf("\\n");
+
                 int skip = m[0].rm_eo;
                 if (skip == 0) skip = 1;
                 pos += skip;
+                match_cnt++;
                 if (*pos == '\\0') break;
             }}
+            line_idx++;
         }}
         regfree(&re);
         return 0;
     }}
     """
 
-    # Оборачивает regex студента в C-программу
     def _wrap_regex_in_c(self, student_regex: str) -> str:
         escaped = student_regex.replace('\\', '\\\\').replace('"', '\\"')
-        is_whole = 1 if self.sub_variant in ['full_email', 'full_version', 'as_is', 'normalize_iso'] else 0
+        return self._C_TEMPLATE.format(regex=escaped)
 
-        if self.variant == 'email':
-            return self._C_TEMPLATE_MULTI_EMAIL.format(
-                regex=escaped,
-                is_whole=is_whole,
-                variant=self.variant,
-                sub_variant=self.sub_variant
-            )
+    def _process_c_output(self, c_stdout: str, input_lines: list[str]) -> str:
+        results = []
+        is_whole = self.sub_variant in ['full_email', 'full_version', 'as_is', 'normalize_iso']
 
-        return self._C_TEMPLATE_SINGLE.format(
-            regex=escaped,
-            variant=self.variant,
-            sub_variant=self.sub_variant,
-            is_whole=is_whole
-        )
+        for line in c_stdout.strip().splitlines():
+            if not line.startswith("MATCH"):
+                continue
+            
+            parts = line.split('\t')
+            line_idx = int(parts[1])
+            original_string = input_lines[line_idx]
+            
+            original_bytes = original_string.encode('utf-8')
+            
+            groups = []
+            for g in parts[2:]:
+                so, eo = map(int, g.split(':'))
+                groups.append((so, eo))
+                
+            if not groups or groups[0] == (-1, -1):
+                continue
 
+            if self.variant == "email":
+                end_byte = groups[0][1]
+                if end_byte < len(original_bytes):
+                    after_byte = original_bytes[end_byte]
+                    if (65 <= after_byte <= 90) or (97 <= after_byte <= 122):
+                        continue
+
+            full_match = original_bytes[groups[0][0]:groups[0][1]].decode('utf-8', errors='replace')
+            nsub = len(groups) - 1
+
+            if self.variant == "email" and self.sub_variant != "full_email" and nsub == 0:
+                if '@' in full_match:
+                    user, domain = full_match.split('@', 1)
+                    results.append(domain if self.sub_variant == "domain" else user)
+                continue
+
+            if self.variant == "url_path" and nsub == 0:
+                if '://' in full_match:
+                    scheme, rest = full_match.split('://', 1)
+                    slash_idx = rest.find('/')
+                    if slash_idx == -1:
+                        domain, path = rest, ""
+                    else:
+                        domain, path = rest[:slash_idx], rest[slash_idx:]
+                    
+                    if self.sub_variant == "scheme":
+                        results.append(scheme)
+                    elif self.sub_variant == "domain":
+                        results.append(domain)
+                    elif self.sub_variant == "path" and path:
+                        results.append(path)
+                continue
+
+            g = 0
+            if nsub > 0:
+                for i in range(1, len(groups)):
+                    if groups[i] == groups[0]:
+                        g = i
+                        break
+                else:
+                    if not is_whole:
+                        for i in range(1, len(groups)):
+                            if groups[i] != (-1, -1):
+                                g = i
+                                break
+
+            start, end = groups[g]
+            if start == -1:
+                continue
+                
+            target_str = original_bytes[start:end].decode('utf-8', errors='replace')
+
+            if self.variant == "date_in_filename" and self.sub_variant == "normalize_iso":
+                try:
+                    p = [int(x) for x in target_str.split('-')]
+                    if len(p) == 3:
+                        if len(str(p[0])) == 4:
+                            target_str = f"{p[0]:04d}-{p[1]:02d}-{p[2]:02d}"
+                        else:
+                            target_str = f"{p[2]:04d}-{p[0]:02d}-{p[1]:02d}"
+                except ValueError:
+                    pass
+            
+            results.append(target_str)
+
+        return '\n'.join(results)
 
     @property
     def preloadedCode(self):
         return ""
-    
-    # Запускает тест и возвращает Fail при несовпадении, иначе None
+
     def _run_test(self, program: CProgramRunner, program_input: str, expected: str) -> Result.Ok | Result.Fail | None:
         try:
-            result = program.run(program_input)
-            result_norm   = '\n'.join(l.rstrip() for l in result.rstrip('\n').splitlines())
-            expected_norm = '\n'.join(l.rstrip() for l in expected.rstrip('\n').splitlines())
+            raw_c_output = program.run(program_input)
+            
+            input_lines = program_input.rstrip('\n').splitlines()
+            result_str = self._process_c_output(raw_c_output, input_lines)
+            
+            result_norm = '\n'.join(l.rstrip() for l in result_str.strip().splitlines())
+            expected_norm = '\n'.join(l.rstrip() for l in expected.strip().splitlines())
+            
             if result_norm != expected_norm:
-                return Result.Fail(program_input, expected, result)
+                return Result.Fail(program_input, expected, result_norm)
+                
         except ExecutionError as e:
             return Result.Fail(program_input, expected, str(e))
         return None
