@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prog_questions"
+version = "0.1.0"
+description = "Библиотека вопросов для CodeRunner в Moodle"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "MSE 1h2026 Team"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Topic :: Education :: Testing",
+]
+dependencies = [
+    "astor>=0.8.1,<0.9.0",
+    "lxml>=5.3.1,<5.4.0",
+    "faker==26.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3,<8.4.0",
+    "pytest-cov>=6.0.0,<6.1.0",
+]
+test = [
+    "pytest>=8.3.3,<8.4.0",
+    "pytest-cov>=6.0.0,<6.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["prog_questions*"]
+
+[tool.setuptools.package-data]
+prog_questions = ["**/*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
