@@ -6,9 +6,9 @@ import base64
 import os
 import lxml.etree as xml
 import ast
-import astor
 import sys
 import copy
+import json
 
 
 # Константы
@@ -53,11 +53,28 @@ try:
         raise ValueError(f"Класс {{TARGET_CLASS_NAME}} не найден или не наследует QuestionBase")
 
     import sys as _sys
-    argvData = {{p.split('=')[0]: p.split('=')[1] for p in _sys.argv[1:] if '=' in p}}
-    seed = int(argvData.get('seed', 42))
+    import inspect
 
-    question = DebugClass(seed=seed)
-    
+    argvData = {{p.split('=')[0]: p.split('=')[1] for p in _sys.argv[1:] if '=' in p}}
+
+    sig = inspect.signature(DebugClass.__init__)
+    valid_params = sig.parameters.keys()
+
+    kwargs = {{}}
+    for k, v in argvData.items():
+        if k in valid_params:
+            if k == 'seed':
+                kwargs[k] = int(v)
+            elif k == 'is_simple_task':
+                kwargs[k] = v.lower() in ('true', '1', 'yes')
+            else:
+                kwargs[k] = v
+
+    if 'seed' not in kwargs:
+        kwargs['seed'] = 42
+
+    question = DebugClass(**kwargs)
+
     params_dict = json.loads(question.getTemplateParameters())
     params_dict['DEBUG_SOURCE'] = CLASS_SOURCE
     print(json.dumps(params_dict))
@@ -259,11 +276,11 @@ print(question.getTemplateParameters())
                 for kw_name, kw_value in zip(question_arguments.kwonlyargs, question_arguments.kw_defaults):
                     if kw_name.arg == 'seed':
                         continue
-                    kw_name.annotation = None
-                    keywords.append(ast.keyword(arg=kw_name, value=kw_value))
+
+                    keywords.append(ast.keyword(arg=kw_name.arg, value=kw_value))
 
             call_node = ast.Call(func=ast.Attribute(value=ast.Name(id=question_class), attr='initTemplate'), args=[], keywords=keywords)
-            constructor_code = astor.to_source(call_node).rstrip()
+            constructor_code = ast.unparse(call_node).rstrip()
 
             parameters_code = parameters_code_template.format(module_path=module_path, class_name=question_class, constructor_code=constructor_code).lstrip()
             code = code_template.format(module_path=module_path, class_name=question_class).lstrip()
