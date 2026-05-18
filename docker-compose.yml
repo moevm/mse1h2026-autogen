@@ -1,6 +1,7 @@
 services:
   build-prog-questions:
     build: .
+    command: ["python", "build/build.py"]
     volumes:
       - ./src:/app/src:ro
       - ./dist:/app/dist
