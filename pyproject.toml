@@ -7,7 +7,7 @@ name = "prog_questions"
 version = "0.1.0"
 description = "Библиотека вопросов для контрольной по программированию (1 и 2 семестры)"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "MSE 1h2026-autogen Team"}
