@@ -71,7 +71,7 @@ try:
                 kwargs[k] = v
 
     if 'seed' not in kwargs:
-        kwargs['seed'] = 42
+        kwargs['seed'] = 42{simple_override}
 
     question = DebugClass(**kwargs)
 
@@ -243,31 +243,41 @@ print(question.getTemplateParameters())
         sub_path = rel_path.parent.relative_to('prog_questions')
 
         if BUILD_DEBUG:
+            has_simple_variant = question_arguments is not None and any(
+                arg.arg == 'is_simple_task' for arg in question_arguments.kwonlyargs
+            )
+
+            debug_variants = [(None, '', '')] if not has_simple_variant else [
+                (True, '_Simple', ' (простое)'),
+                (False, '_Complex', ' (сложное)'),
+            ]
+
             source_code = file.read_text(encoding='utf-8')
             escaped_source = source_code.replace('\\', '\\\\').replace('"""', '\\"\\"\\"')
+            debug_code = debug_code_template.format(class_name=question_class).lstrip()
 
-            debug_templateparams = DEBUG_TEMPLATEPARAMS.format(
-                class_source=escaped_source,
-                class_name=question_class
-            ).lstrip()
+            for simple_value, file_suffix, name_suffix in debug_variants:
+                simple_override = '' if simple_value is None else f"\n    kwargs['is_simple_task'] = {simple_value}"
 
-            debug_code = debug_code_template.format(
-                class_name=question_class
-            ).lstrip()
+                debug_templateparams = DEBUG_TEMPLATEPARAMS.format(
+                    class_source=escaped_source,
+                    class_name=question_class,
+                    simple_override=simple_override
+                ).lstrip()
 
-            debug_xml = copy.deepcopy(xml_template)
-            debug_xml.xpath('//templateparams')[0].text = xml.CDATA(debug_templateparams)
-            debug_xml.xpath('//template')[0].text = xml.CDATA(debug_code)
+                debug_xml = copy.deepcopy(xml_template)
+                debug_xml.xpath('//templateparams')[0].text = xml.CDATA(debug_templateparams)
+                debug_xml.xpath('//template')[0].text = xml.CDATA(debug_code)
 
-            folder_context = "autumn" if str(sub_path) == "." else str(sub_path)
-            debug_moodle_name = f'[DEBUG] {folder_context} - {question_name}'
-            debug_xml.xpath('//question/name/text')[0].text = xml.CDATA(debug_moodle_name)
+                folder_context = "autumn" if str(sub_path) == "." else str(sub_path)
+                debug_moodle_name = f'[DEBUG] {folder_context} - {question_name}{name_suffix}'
+                debug_xml.xpath('//question/name/text')[0].text = xml.CDATA(debug_moodle_name)
 
-            debug_output_dir = OUTPUT_DEBUG_PATH / sub_path
-            debug_output_dir.mkdir(parents=True, exist_ok=True)
+                debug_output_dir = OUTPUT_DEBUG_PATH / sub_path
+                debug_output_dir.mkdir(parents=True, exist_ok=True)
 
-            debug_output_path = debug_output_dir / f'{question_class}_debug.xml'
-            debug_xml.write(debug_output_path, xml_declaration=True, encoding='utf-8')
+                debug_output_path = debug_output_dir / f'{question_class}{file_suffix}_debug.xml'
+                debug_xml.write(debug_output_path, xml_declaration=True, encoding='utf-8')
         else:
             module_path = '.'.join(rel_path.parent.parts)
 
