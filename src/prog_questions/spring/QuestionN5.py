@@ -19,15 +19,20 @@ class QuestionN5(QuestionBase):
     TASK_LIST_DIRECTORY   = 'list_directory'
     TASK_COUNT_LINES      = 'count_lines_in_dir'
 
-    TASK_TYPES = [
-        TASK_DELETE_RENAME,
-        TASK_READ_HEX,
-        TASK_OVERWRITE_BYTES,
-        TASK_FILE_STATS,
-        TASK_MERGE_FILES,
+    SIMPLE_TASK_TYPES = [
         TASK_LIST_DIRECTORY,
         TASK_COUNT_LINES,
+        TASK_FILE_STATS,
+        TASK_DELETE_RENAME,
     ]
+
+    COMPLEX_TASK_TYPES = [
+        TASK_READ_HEX,
+        TASK_OVERWRITE_BYTES,
+        TASK_MERGE_FILES,
+    ]
+
+    TASK_TYPES = SIMPLE_TASK_TYPES + COMPLEX_TASK_TYPES
 
     # Параметры генерации содержимого файлов
     MIN_FILE_SIZE   = 50
@@ -41,15 +46,18 @@ class QuestionN5(QuestionBase):
     FIXED_TESTS_COUNT  = 5
     RANDOM_TESTS_COUNT = 10
 
-    def __init__(self, *, seed, taskType: str = ''):
-        super().__init__(seed=seed, taskType=taskType)
+    def __init__(self, *, seed, taskType: str = '', is_simple_task: bool = True):
+        super().__init__(seed=seed, taskType=taskType, is_simple_task=is_simple_task)
         random.seed(self.seed)
+        self.is_simple_task = is_simple_task
 
-        # Если тип задания не задан или не распознан — выбираем случайно
+        # Если тип задания задан явно и допустим — используем его
         if taskType in self.TASK_TYPES:
             self.taskType = taskType
         else:
-            self.taskType = random.choice(self.TASK_TYPES)
+            # Иначе выбираем случайно из нужного списка
+            pool = self.SIMPLE_TASK_TYPES if is_simple_task else self.COMPLEX_TASK_TYPES
+            self.taskType = random.choice(pool)
 
     def _make_random_filename(self, prefix='file', ext='.txt'):
         """
@@ -667,9 +675,6 @@ class QuestionN5(QuestionBase):
 
     @property
     def preloadedCode(self) -> str:
-        """
-        Шаблон кода, который видит студент при открытии задания.
-        """
         return '\n'.join([
             '#include <stdio.h>',
             '#include <stdlib.h>',

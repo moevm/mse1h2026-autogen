@@ -71,7 +71,7 @@ try:
                 kwargs[k] = v
 
     if 'seed' not in kwargs:
-        kwargs['seed'] = 42
+        kwargs['seed'] = 42{simple_override}
 
     question = DebugClass(**kwargs)
 
@@ -243,57 +243,85 @@ print(question.getTemplateParameters())
         sub_path = rel_path.parent.relative_to('prog_questions')
 
         if BUILD_DEBUG:
+            has_simple_variant = question_arguments is not None and any(
+                arg.arg == 'is_simple_task' for arg in question_arguments.kwonlyargs
+            )
+
+            debug_variants = [(None, '', '')] if not has_simple_variant else [
+                (True, '_Simple', ' (простое)'),
+                (False, '_Complex', ' (сложное)'),
+            ]
+
             source_code = file.read_text(encoding='utf-8')
             escaped_source = source_code.replace('\\', '\\\\').replace('"""', '\\"\\"\\"')
+            debug_code = debug_code_template.format(class_name=question_class).lstrip()
 
-            debug_templateparams = DEBUG_TEMPLATEPARAMS.format(
-                class_source=escaped_source,
-                class_name=question_class
-            ).lstrip()
-            
-            debug_code = debug_code_template.format(
-                class_name=question_class
-            ).lstrip()
+            for simple_value, file_suffix, name_suffix in debug_variants:
+                simple_override = '' if simple_value is None else f"\n    kwargs['is_simple_task'] = {simple_value}"
 
-            debug_xml = copy.deepcopy(xml_template)
-            debug_xml.xpath('//templateparams')[0].text = xml.CDATA(debug_templateparams)
-            
-            debug_xml.xpath('//template')[0].text = xml.CDATA(debug_code)
-            
-            folder_context = "autumn" if str(sub_path) == "." else str(sub_path)
-            debug_moodle_name = f'[DEBUG] {folder_context} - {question_name}'
-            debug_xml.xpath('//question/name/text')[0].text = xml.CDATA(debug_moodle_name)
+                debug_templateparams = DEBUG_TEMPLATEPARAMS.format(
+                    class_source=escaped_source,
+                    class_name=question_class,
+                    simple_override=simple_override
+                ).lstrip()
 
-            debug_output_dir = OUTPUT_DEBUG_PATH / sub_path
-            debug_output_dir.mkdir(parents=True, exist_ok=True)
-            
-            debug_output_path = debug_output_dir / f'{question_class}_debug.xml'
-            debug_xml.write(debug_output_path, xml_declaration=True, encoding='utf-8')
+                debug_xml = copy.deepcopy(xml_template)
+                debug_xml.xpath('//templateparams')[0].text = xml.CDATA(debug_templateparams)
+                debug_xml.xpath('//template')[0].text = xml.CDATA(debug_code)
+
+                folder_context = "autumn" if str(sub_path) == "." else str(sub_path)
+                debug_moodle_name = f'[DEBUG] {folder_context} - {question_name}{name_suffix}'
+                debug_xml.xpath('//question/name/text')[0].text = xml.CDATA(debug_moodle_name)
+
+                debug_output_dir = OUTPUT_DEBUG_PATH / sub_path
+                debug_output_dir.mkdir(parents=True, exist_ok=True)
+
+                debug_output_path = debug_output_dir / f'{question_class}{file_suffix}_debug.xml'
+                debug_xml.write(debug_output_path, xml_declaration=True, encoding='utf-8')
         else:
             module_path = '.'.join(rel_path.parent.parts)
-            keywords = [ast.keyword(arg='seed', value=ast.Constant(value=Ellipsis))]
-            if question_arguments is not None:
-                for kw_name, kw_value in zip(question_arguments.kwonlyargs, question_arguments.kw_defaults):
-                    if kw_name.arg == 'seed':
-                        continue
 
-                    keywords.append(ast.keyword(arg=kw_name.arg, value=kw_value))
+            # Определяем, поддерживает ли класс параметр is_simple_task
+            has_simple_variant = question_arguments is not None and any(
+                arg.arg == 'is_simple_task' for arg in question_arguments.kwonlyargs
+            )
 
-            call_node = ast.Call(func=ast.Attribute(value=ast.Name(id=question_class), attr='initTemplate'), args=[], keywords=keywords)
-            constructor_code = ast.unparse(call_node).rstrip()
+            # Варианты сборки: (значение is_simple_task, суффикс файла, суффикс названия)
+            variants = [(None, '', '')] if not has_simple_variant else [
+                (True, '_Simple', ' (простое)'),
+                (False, '_Complex', ' (сложное)'),
+            ]
 
-            parameters_code = parameters_code_template.format(module_path=module_path, class_name=question_class, constructor_code=constructor_code).lstrip()
-            code = code_template.format(module_path=module_path, class_name=question_class).lstrip()
+            for simple_value, file_suffix, name_suffix in variants:
+                keywords = [ast.keyword(arg='seed', value=ast.Constant(value=Ellipsis))]
 
-            current_xml = copy.deepcopy(xml_template)
-            current_xml.xpath('//question/name/text')[0].text = xml.CDATA(question_name)
-            current_xml.xpath('//templateparams')[0].text = xml.CDATA(parameters_code)
-            current_xml.xpath('//template')[0].text = xml.CDATA(code)
+                if question_arguments is not None:
+                    for kw_name, kw_value in zip(question_arguments.kwonlyargs, question_arguments.kw_defaults):
+                        if kw_name.arg == 'seed':
+                            continue
 
-            xml_output_dir = OUTPUT_PATH / sub_path
-            xml_output_dir.mkdir(parents=True, exist_ok=True)
-            xml_output_path = xml_output_dir / f'{question_class}.xml'
-            current_xml.write(xml_output_path, xml_declaration=True, encoding='utf-8')
+                        if kw_name.arg == 'is_simple_task' and simple_value is not None:
+                            value = ast.Constant(value=simple_value)
+                        else:
+                            value = kw_value
+
+                        keywords.append(ast.keyword(arg=kw_name.arg, value=value))
+
+                call_node = ast.Call(func=ast.Attribute(value=ast.Name(id=question_class), attr='initTemplate'), args=[], keywords=keywords)
+                constructor_code = ast.unparse(call_node).rstrip()
+
+                parameters_code = parameters_code_template.format(module_path=module_path, class_name=question_class, constructor_code=constructor_code).lstrip()
+                code = code_template.format(module_path=module_path, class_name=question_class).lstrip()
+
+                current_xml = copy.deepcopy(xml_template)
+                current_xml.xpath('//question/name/text')[0].text = xml.CDATA(question_name + name_suffix)
+                current_xml.xpath('//templateparams')[0].text = xml.CDATA(parameters_code)
+                current_xml.xpath('//template')[0].text = xml.CDATA(code)
+
+                xml_output_dir = OUTPUT_PATH / sub_path
+                xml_output_dir.mkdir(parents=True, exist_ok=True)
+                xml_output_path = xml_output_dir / f'{question_class}{file_suffix}.xml'
+                current_xml.write(xml_output_path, xml_declaration=True, encoding='utf-8')
 
     mode = "DEBUG" if BUILD_DEBUG else "BASIC"
     print(f"Задачи успешно собраны в режиме {mode}:")
