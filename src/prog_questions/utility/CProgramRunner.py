@@ -71,7 +71,7 @@ class ExitCodeHandler:
 class CProgramRunner:
     """Класс для компиляции и выполнения C-кода"""
 
-    def __init__(self, c_code: str, use_chroot: bool = True):
+    def __init__(self, c_code: str, use_chroot: bool = False):
         """
         Инициализация с компиляцией переданного C-кода
         :param c_code: Исходный код на C в виде строки
