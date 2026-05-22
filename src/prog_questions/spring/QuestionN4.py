@@ -1,12 +1,10 @@
 from ..QuestionBase import QuestionBase, Result
 from ..utility import CppProgramRunner, CompilationError, ExecutionError
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, List, Tuple, Set, Literal
 import random
 from collections import defaultdict, Counter
 from textwrap import dedent
-
-
 
 @dataclass
 class Task4Config:
@@ -108,14 +106,14 @@ class Task4ConfigGenerator:
         numbers = []
         num_good = random.randint(3, 6)
         for _ in range(num_good):
-            base = random.randint(1, 200)
+            base = random.randint(*self.VALUE_RANGE)
             # гарантируем, что число имеет установленные биты маски
             num = base | config.mask
             freq = random.randint(config.min_freq, config.min_freq + 2)
             numbers.extend([num] * freq)
 
         for _ in range(random.randint(5, 15)):
-            numbers.append(random.randint(1, 200))
+            numbers.append(random.randint(*self.VALUE_RANGE))
 
         random.shuffle(numbers)
         config.numbers = numbers
@@ -192,9 +190,25 @@ def generate_question_text_41(config: Task4Config) -> str:
 <p><i>Если после фильтрации не осталось ни одной группы, выведите <code>NO_DATA</code>.</i></p>"""
 
     # Пример
-    example_inp = "apple ant banana bat cat #"
-    example_out = "a: ant apple\nb: banana bat\nc: cat"
-    note = "Группировка по первой букве, сортировка внутри"
+    example_words = ['apple', 'ant', 'apricot', 'banana', 'bat', 'cat']
+    example_inp = ' '.join(example_words) + ' #'
+
+    groups = defaultdict(list)
+    for w in example_words:
+        if w: groups[w[0]].append(w)
+
+    lines = []
+    for letter in sorted(groups.keys()):
+        count = len(groups[letter])
+        if config.filter_type == 'min_count' and count < config.threshold: continue
+        if config.filter_type == 'max_count' and count > config.threshold: continue
+        if config.filter_type == 'exact_count' and count != config.threshold: continue
+        if config.filter_type == 'letter_filter' and letter not in config.allowed_letters: continue
+        words_sorted = sorted(groups[letter])
+        lines.append(f"{letter}: {' '.join(words_sorted)}")
+
+    example_out = '\n'.join(lines) if lines else "NO_DATA"
+    note = f"Пример с учётом фильтра: {config.filter_type if config.filter_type != 'none' else 'без фильтра'}"
     example_table = format_example_table(example_inp, example_out, note)
 
     return dedent(f"{header}{condition}{filter_desc}{input_desc}{output_desc}{example_table}")
@@ -231,9 +245,27 @@ def generate_question_text_42(config: Task4Config) -> str:
 <p><i>Если после фильтрации не осталось ни одного числа, выведите <code>NO_DATA</code>.</i></p>"""
 
     # Пример
-    example_inp = "3 3 3 5 5 0"
-    example_out = "3 3 24"
-    note = f"Маска 0x{config.mask:02X}, операция: {'shift' if config.operation == 'shift' else 'AND'}"
+    example_numbers = []
+    matching_num = config.mask
+    example_numbers.extend([matching_num] * config.min_freq)
+    example_numbers.extend([1, 2, 3])
+
+    example_inp = ' '.join(map(str, example_numbers)) + ' 0'
+
+    freq = Counter(example_numbers)
+    results = []
+    for num in sorted(freq.keys()):
+        count = freq[num]
+        if count < config.min_freq: continue
+        if (num & config.mask) != config.mask: continue
+        if config.operation == 'shift':
+            res = num << count
+        else:
+            res = num & config.mask
+        results.append(f"{num} {count} {res}")
+
+    example_out = '\n'.join(results) if results else "NO_DATA"
+    note = f"Маска 0x{config.mask:02X}, операция: {config.operation}, min_freq={config.min_freq}"
     example_table = format_example_table(example_inp, example_out, note)
 
     return dedent(f"{header}{condition}{input_desc}{output_desc}{example_table}")
@@ -324,9 +356,12 @@ int main() {
             elif test_num == 1:
                 config.numbers = [1, 2, 3]
             elif test_num == 2:
-                config.numbers = [5, 5, 0] if (5 & config.mask) == config.mask else [1, 1]
+                if (5 & config.mask) == config.mask:
+                    config.numbers = [5, 5]
+                else:
+                    config.numbers = [1, 1]
             elif test_num == 3:
-                config.numbers = [config.mask] * (config.min_freq + 2) + [0]
+                config.numbers = [config.mask] * (config.min_freq + 2)
         elif config.task_type == '4.3':
             if test_num == 0:
                 config.commands = [('ADD', 'apple'), ('SUB', 'apple')]
@@ -441,3 +476,4 @@ int main() {
                 return Result.Fail(input_data, expected, output)
 
         return Result.Ok()
+    

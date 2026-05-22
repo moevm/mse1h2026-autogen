@@ -5,7 +5,6 @@ from utility import moodleInit
 import pytest
 import random
 
-
 def assert_cpp_solution_works_on_config(solution_code, config, task_type):
     """Компилирует и запускает решение на входных данных из config, сравнивает с эталоном."""
     runner = CppProgramRunner(solution_code)
@@ -228,3 +227,42 @@ class TestTask4ConfigGenerator:
             q = QuestionN4(seed=seed)
             types_seen.add(q.task_type)
         assert len(types_seen) == 3, f"Ожидались все 3 типа, получены {types_seen}"
+
+    def test_empty_result_shows_no_data(self):
+        """
+        Проверяет, что если после фильтрации не осталось ни одной группы/числа,
+        программа выводит "NO_DATA", а не пустую строку.
+        """
+
+        gen = Task4ConfigGenerator(seed=123, strictness=0.3)
+        config = gen.generate(task_type_override='4.1')
+        config.filter_type = 'exact_count'
+        config.threshold = 10
+        config.words = ['cat', 'dog']
+        
+        solution = '''#include <iostream>
+    #include <map>
+    #include <vector>
+    #include <string>
+    #include <algorithm>
+    int main() {
+        std::map<char, std::vector<std::string>> groups;
+        std::string word;
+        while (std::cin >> word && word != "#") {
+            if (!word.empty()) groups[word[0]].push_back(word);
+        }
+        bool printed = false;
+        for (auto& [letter, words] : groups) {
+            if ((int)words.size() == 10) {  // наш точный порог
+                std::sort(words.begin(), words.end());
+                std::cout << letter << ":";
+                for (const auto& w : words) std::cout << " " << w;
+                std::cout << "\\n";
+                printed = true;
+            }
+        }
+        if (!printed) std::cout << "NO_DATA";
+        return 0;
+    }'''
+        
+        assert_cpp_solution_works_on_config(solution, config, '4.1')
