@@ -70,7 +70,8 @@ def test_bwrap_isolation_integration():
             assert 'bwrap' in called_args, f"Ожидается использование bwrap, получено: {called_args}"
             
             assert '--ro-bind' in called_args, "Отсутствуют обязательные флаги --ro-bind"
-            assert '--unshare-all' in called_args, "Отсутствует флаг --unshare-all"
+            assert '--unshare-pid' in called_args, "Отсутствует флаг --unshare-pid"
+            assert '--unshare-net' in called_args, "Отсутствует флаг --unshare-net"
             assert '--tmpfs' in called_args, "Отсутствует флаг --tmpfs"
             
         except Exception as e:
