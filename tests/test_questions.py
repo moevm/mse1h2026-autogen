@@ -41,26 +41,27 @@ def timeout_handler(signum, frame):
 
 def find_question_classes():
     classes = []
-    modules_to_check = [
-        "prog_questions.QuestionN1",
-        "prog_questions.QuestionN2",
-        "prog_questions.QuestionN3",
-        "prog_questions.QuestionN4",
-        "prog_questions.QuestionN5",
-        "prog_questions.spring.QuestionN1",
-        "prog_questions.spring.QuestionN2",
-        "prog_questions.spring.QuestionN3",
-        "prog_questions.spring.QuestionN4",
-        "prog_questions.spring.QuestionN5",
-    ]
+    autumn_files = list(SRC_DIR.glob("Question*.py"))
+    spring_files = list(SPRING_DIR.glob("Question*.py"))
+    
+    all_files = autumn_files + spring_files
+    seen_modules = set()
 
-    for module_name in modules_to_check:
+    for file_path in all_files:
+        if file_path.name.startswith("__"): 
+            continue
         try:
+            relative = file_path.relative_to(PROJECT_ROOT)
+            module_name = str(relative.with_suffix('')).replace(os.sep, '.')
+            
+            if module_name in seen_modules: 
+                continue
+            seen_modules.add(module_name)
+
             module = importlib.import_module(module_name)
             for name, obj in inspect.getmembers(module, inspect.isclass):
-                if re.match(r"QuestionN\d+", name):
-                    if hasattr(obj, 'questionName'):
-                        classes.append(obj)
+                if re.match(r"QuestionN\d+", name) and hasattr(obj, 'questionName'):
+                    classes.append(obj)
         except ImportError:
             pass
     return classes
@@ -76,8 +77,13 @@ def test_question_functionality_and_style(question_class):
     is_spring = 'spring' in str(question_class.__module__)
     
     current_seed = random.randint(1, 1000000)
-    instance = question_class(seed=current_seed)
+    original_temp_dir = tempfile.gettempdir()
+    tempfile.tempdir = os.getcwd()
 
+    try:
+        instance = question_class(seed=current_seed)
+    finally:
+        tempfile.tempdir = original_temp_dir
 
     if q_name == 'QuestionN1' and is_spring:
         placeholder_code = PLACEHOLDER_REGEX
