@@ -150,7 +150,7 @@ class CProgramRunner:
                     '--die-with-parent',
                     '--bind', self.tmp_dir.name, '/sandbox',
                     f'/sandbox/{bin_name}'
-                ]
+                    ]
                     if os.path.exists('/lib64'):
                         cmd[3:3] = ['--ro-bind', '/lib64', '/lib64']
                     
