@@ -118,6 +118,18 @@ class CProgramRunner:
         except Exception as e:
             raise InternalError(f"Внутренняя ошибка при компиляции: {e}")
 
+    @staticmethod
+    def _bwrap_userns_available() -> bool:
+        try:
+            result = subprocess.run(
+                ['bwrap', '--ro-bind', '/usr', '/usr', '--proc', '/proc',
+                 '--dev', '/dev', '--unshare-pid', 'true'],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
+
     def run(self, input_data: str = "", timeout: int = 3) -> str:
         """
         Запуск скомпилированной программы
@@ -132,7 +144,7 @@ class CProgramRunner:
             cmd = []
             isolation_active = False
             if self.use_isolation:
-                if shutil.which('bwrap'):
+                if shutil.which('bwrap') and self._bwrap_userns_available():
                     bin_name = os.path.basename(self.executable_path)
 
                     cmd = [

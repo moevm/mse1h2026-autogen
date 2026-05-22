@@ -166,17 +166,15 @@ def test_bwrap_sandbox_security():
     }
     """
     
-    try:
-        subprocess.run(['which', 'bwrap'], check=True, stdout=subprocess.DEVNULL)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pytest.skip("bubblewrap не установлен, пропускаем тест")
-    
+    if not CProgramRunner._bwrap_userns_available():
+        pytest.skip("bubblewrap не может создать user namespace в этом окружении")
+
     runner = CProgramRunner(restricted_code, use_isolation=True)
-    
+
     try:
         output = runner.run("")
         assert output is not None
-    except Exception as e:
+    except Exception:
         assert True
 
 
@@ -192,13 +190,11 @@ def test_no_root_requirement_with_bwrap():
     }
     """
     
-    try:
-        subprocess.run(['which', 'bwrap'], check=True, stdout=subprocess.DEVNULL)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pytest.skip("bubblewrap не установлен, пропускаем тест")
-    
+    if not CProgramRunner._bwrap_userns_available():
+        pytest.skip("bubblewrap не может создать user namespace в этом окружении")
+
     runner = CProgramRunner(simple_code, use_isolation=True)
-    
+
     try:
         output = runner.run("")
         assert "permission denied" not in output.lower() if output else True
