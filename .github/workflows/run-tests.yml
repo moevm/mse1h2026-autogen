@@ -16,6 +16,11 @@ jobs:
       - name: Checkout repository code
         uses: actions/checkout@v4
 
+      - name: Install system dependencies (gcc, bubblewrap)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc bubblewrap libc6-dev
+
       - name: Install python modules
         run: pip install -r requirements.txt
 
