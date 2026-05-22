@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import sys
 import os
 import random
 import re
@@ -13,6 +14,9 @@ PROJECT_ROOT = Path(__file__).parent.parent
 SRC_DIR = PROJECT_ROOT / "src" / "prog_questions"
 SPRING_DIR = SRC_DIR / "spring"
 TEST_TIMEOUT_SECONDS = 3
+_src_root = str(SRC_DIR.parent)
+if _src_root not in sys.path:
+    sys.path.insert(0, _src_root)
 
 PLACEHOLDER_C_CODE_SNIPPET = """
 #include <stdio.h>
@@ -50,7 +54,7 @@ def find_question_classes():
         if file_path.name.startswith("__"): 
             continue
         try:
-            relative = file_path.relative_to(PROJECT_ROOT)
+            relative = file_path.relative_to(SRC_DIR.parent)
             module_name = str(relative.with_suffix('')).replace(os.sep, '.')
             
             if module_name in seen_modules: 
@@ -78,7 +82,7 @@ def test_all_question_classes_loaded():
     
     loaded_names = [f"{cls.__module__}.{cls.__name__}" for cls in ALL_QUESTION_CLASSES]
     
-    assert len(ALL_QUESTION_CLASSES) > 0, "❌ ALL_QUESTION_CLASSES пуст — ни один вопрос не загружен!"
+    assert len(ALL_QUESTION_CLASSES) > 0, "ALL_QUESTION_CLASSES пуст — ни один вопрос не загружен!"
     
     found_numbers = set()
     for cls in ALL_QUESTION_CLASSES:
