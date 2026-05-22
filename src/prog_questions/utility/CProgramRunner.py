@@ -136,18 +136,21 @@ class CProgramRunner:
                     bin_name = os.path.basename(self.executable_path)
 
                     cmd = [
-                        'bwrap',
-                        '--ro-bind', '/usr', '/usr',
-                        '--ro-bind', '/lib', '/lib',
-                        '--ro-bind', '/etc', '/etc',
-                        '--tmpfs', '/tmp',
-                        '--proc', '/proc',
-                        '--dev', '/dev',
-                        '--unshare-all',
-                        '--die-with-parent',
-                        '--bind', self.tmp_dir.name, '/sandbox',
-                        f'/sandbox/{bin_name}'
-                    ]
+                    'bwrap',
+                    '--ro-bind', '/usr', '/usr',
+                    '--ro-bind', '/lib', '/lib',
+                    '--ro-bind', '/etc', '/etc',
+                    '--tmpfs', '/tmp',
+                    '--proc', '/proc',
+                    '--dev', '/dev',
+                    '--unshare-pid',
+                    '--unshare-net',
+                    '--unshare-ipc',
+                    '--unshare-uts',
+                    '--die-with-parent',
+                    '--bind', self.tmp_dir.name, '/sandbox',
+                    f'/sandbox/{bin_name}'
+                ]
                     if os.path.exists('/lib64'):
                         cmd[3:3] = ['--ro-bind', '/lib64', '/lib64']
                     
