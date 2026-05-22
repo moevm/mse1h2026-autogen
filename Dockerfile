@@ -13,8 +13,13 @@ FROM python:3.13.2-slim-bookworm
 
 WORKDIR /app 
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc bubblewrap libc6-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /install /usr/local
 COPY build build
+COPY . .
 
 RUN useradd -m appuser && chown -R appuser /app
 
