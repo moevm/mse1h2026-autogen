@@ -2,7 +2,7 @@ import subprocess
 import os
 import tempfile
 import shutil
-import sys
+from typing import List, Optional, Union
 
 class CompilationError(Exception):
     """Ошибка компиляции C-кода"""
@@ -71,13 +71,23 @@ class ExitCodeHandler:
 class CProgramRunner:
     """Класс для компиляции и выполнения C-кода"""
 
-    def __init__(self, c_code: str, use_isolation: bool = True):
+    def __init__(self, c_code: str, use_isolation: bool = True, compile_flags: Optional[Union[str, List[str]]] = None):
         """
         Инициализация с компиляцией переданного C-кода
         :param c_code: Исходный код на C в виде строки
         """
         self.c_code = c_code
         self.use_isolation = use_isolation
+
+        if compile_flags is None:
+            self.compile_flags = []
+        elif isinstance(compile_flags, str):
+            self.compile_flags = [f for f in compile_flags.split() if f]
+        elif isinstance(compile_flags, (list, tuple)):
+            self.compile_flags = list(compile_flags)
+        else:
+            raise TypeError(f"compile_flags должен быть str/list/tuple, получено: {type(compile_flags)}")
+
         self.exit_code_handler = ExitCodeHandler()
         
         try:
@@ -100,8 +110,9 @@ class CProgramRunner:
                 f.write(self.c_code)
 
             exec_path = os.path.join(self.tmp_dir.name, 'program')
+            compile_cmd = ['gcc', src_path, '-o', exec_path] + self.compile_flags
             compile_result = subprocess.run(
-                ['gcc', src_path, '-o', exec_path],
+                compile_cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
@@ -141,7 +152,6 @@ class CProgramRunner:
             raise EnvironmentError("Исполняемый файл не скомпилирован или отсутствует")
 
         try:
-            cmd = []
             isolation_active = False
             if self.use_isolation:
                 if shutil.which('bwrap') and self._bwrap_userns_available():

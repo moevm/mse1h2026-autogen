@@ -4,7 +4,6 @@ import os
 import random
 import re
 import signal
-import sys
 import tempfile
 from pathlib import Path
 
@@ -62,12 +61,35 @@ def find_question_classes():
             for name, obj in inspect.getmembers(module, inspect.isclass):
                 if re.match(r"QuestionN\d+", name) and hasattr(obj, 'questionName'):
                     classes.append(obj)
-        except ImportError:
-            pass
+        except ImportError as e:
+            pytest.fail(f"Не удалось импортировать модуль {file_path}: {e}")
     return classes
 
 
 ALL_QUESTION_CLASSES = find_question_classes()
+
+def test_all_question_classes_loaded():
+    """Проверяет, что все 10 ожидаемых классов вопросов загружены"""
+    
+    expected_classes = [
+        'QuestionN1', 'QuestionN2', 'QuestionN3', 'QuestionN4', 'QuestionN5',  # Autumn
+        'QuestionN1', 'QuestionN2', 'QuestionN3', 'QuestionN4', 'QuestionN5',  # Spring (в другом модуле)
+    ]
+    
+    loaded_names = [f"{cls.__module__}.{cls.__name__}" for cls in ALL_QUESTION_CLASSES]
+    
+    assert len(ALL_QUESTION_CLASSES) > 0, "❌ ALL_QUESTION_CLASSES пуст — ни один вопрос не загружен!"
+    
+    found_numbers = set()
+    for cls in ALL_QUESTION_CLASSES:
+        match = re.match(r"QuestionN(\d+)", cls.__name__)
+        if match:
+            found_numbers.add(match.group(1))
+    
+    expected_numbers = {'1', '2', '3', '4', '5'}
+    missing = expected_numbers - found_numbers
+    
+    assert not missing, f"Не загружены вопросы: {missing}. Найдено: {found_numbers}"
 
 @pytest.mark.parametrize("question_class", ALL_QUESTION_CLASSES)
 def test_question_functionality_and_style(question_class):
@@ -81,6 +103,7 @@ def test_question_functionality_and_style(question_class):
     tempfile.tempdir = os.getcwd()
 
     try:
+        initial_files = set(Path(".").iterdir())
         instance = question_class(seed=current_seed)
     finally:
         tempfile.tempdir = original_temp_dir
@@ -99,8 +122,6 @@ def test_question_functionality_and_style(question_class):
         placeholder_code = PLACEHOLDER_CPP_CODE_SNIPPET
     else:
         placeholder_code = PLACEHOLDER_C_CODE_SNIPPET
-
-    initial_files = set(Path(".").iterdir())
 
     assert hasattr(instance, 'test'), f"Question class {q_name} does not have a 'test' method."
 

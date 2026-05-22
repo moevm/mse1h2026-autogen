@@ -219,3 +219,31 @@ def test_bwrap_vs_no_isolation_flag():
     
     runner_with_isolation = CProgramRunner(simple_code, use_isolation=True)
     assert runner_with_isolation.use_isolation == True
+
+def test_compile_flags_actually_used():
+    """
+    Проверяем, что флаги компиляции реально передаются в gcc
+    """
+    from prog_questions.spring.QuestionN1 import QuestionN1 as SpringQ1
+    from unittest.mock import patch, MagicMock
+
+    assert hasattr(SpringQ1, 'COMPILE_FLAGS'), "Вопрос должен иметь атрибут COMPILE_FLAGS"
+    raw_flags = SpringQ1.COMPILE_FLAGS
+    test_code = "#include <stdio.h>\nint main(){return 0;}"
+
+    with patch('subprocess.run') as mock_run:
+        mock_compile = MagicMock(returncode=0, stdout=b"", stderr=b"")
+        mock_run.return_value = mock_compile
+
+        try:
+            CProgramRunner(test_code, compile_flags=raw_flags)
+        except Exception:
+            pass
+
+        assert mock_run.called, "subprocess.run не был вызван"
+
+        compile_cmd = mock_run.call_args[0][0]
+        expected_flags = raw_flags.split() if isinstance(raw_flags, str) else list(raw_flags)
+        for flag in expected_flags:
+            assert flag in compile_cmd, f"Флаг '{flag}' не найден в команде: {compile_cmd}"
+            
