@@ -81,7 +81,7 @@ class CProgramRunner:
         self.exit_code_handler = ExitCodeHandler()
         
         try:
-            self.tmp_dir = tempfile.TemporaryDirectory(dir='.')
+            self.tmp_dir = tempfile.TemporaryDirectory()
         except Exception as e:
             raise EnvironmentError(f"Не удалось создать временную директорию: {e}")
 
@@ -130,27 +130,32 @@ class CProgramRunner:
 
         try:
             cmd = []
+            isolation_active = False
             if self.use_isolation:
-                if not shutil.which('bwrap'):
-                    raise EnvironmentError("bubblewrap не установлен")
-                bin_name = os.path.basename(self.executable_path)
+                if shutil.which('bwrap'):
+                    bin_name = os.path.basename(self.executable_path)
 
-                cmd = [
-                    'bwrap',
-                    '--ro-bind', '/usr', '/usr',
-                    '--ro-bind', '/lib', '/lib',
-                    '--ro-bind', '/etc', '/etc',
-                    '--tmpfs', '/tmp',
-                    '--proc', '/proc',
-                    '--dev', '/dev',
-                    '--unshare-all',
-                    '--die-with-parent',
-                    '--bind', self.tmp_dir.name, '/sandbox',
-                    f'/sandbox/{bin_name}'
-                ]
-                if os.path.exists('/lib64'):
-                    cmd[3:3] = ['--ro-bind', '/lib64', '/lib64']
-            else:
+                    cmd = [
+                        'bwrap',
+                        '--ro-bind', '/usr', '/usr',
+                        '--ro-bind', '/lib', '/lib',
+                        '--ro-bind', '/etc', '/etc',
+                        '--tmpfs', '/tmp',
+                        '--proc', '/proc',
+                        '--dev', '/dev',
+                        '--unshare-all',
+                        '--die-with-parent',
+                        '--bind', self.tmp_dir.name, '/sandbox',
+                        f'/sandbox/{bin_name}'
+                    ]
+                    if os.path.exists('/lib64'):
+                        cmd[3:3] = ['--ro-bind', '/lib64', '/lib64']
+                    
+                    isolation_active = True
+                else:
+                    pass
+
+            if not isolation_active:
                 cmd = [self.executable_path]
 
             run_result = subprocess.run(
@@ -164,7 +169,8 @@ class CProgramRunner:
             exit_message = self.exit_code_handler.get_exit_message(run_result.returncode)
             
             if run_result.returncode != 0:
-                raise ExecutionError(exit_message, run_result.returncode)
+                stderr_text = run_result.stderr.decode('utf-8', errors='replace').strip()
+                raise ExecutionError(f"{exit_message}\n{stderr_text}", run_result.returncode)
 
             try:
                 output = run_result.stdout.decode('utf-8')
@@ -176,10 +182,6 @@ class CProgramRunner:
         except subprocess.TimeoutExpired:
             raise ExecutionError(f"Превышено время выполнения ({timeout} с)", 1)
         except ExecutionError:
-            raise
-        except FileNotFoundError as e:
-            if 'bwrap' in str(e) and self.use_isolation:
-                raise EnvironmentError("bubblewrap не установлен в системе. Выполните: apt install bubblewrap")
             raise
         except Exception as e:
             raise InternalError(f"Внутренняя ошибка при выполнении программы: {e}")
