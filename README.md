@@ -8,6 +8,24 @@
 - Docker Compose >=  2.0
 Запуск без Docker:
 - Python >= 3.11
+- gcc (для компиляции C-программ)
+- bubblewrap >= 0.4.0 (для изолированного запуска C-программ в sandbox)
+
+Установка системных зависимостей на сервере Moodle:
+```bash
+sudo apt-get install -y gcc bubblewrap
+```
+
+Для работы изоляции необходимо включить поддержку user namespaces:
+```bash
+# Включить (требует root)
+sudo sysctl -w kernel.unprivileged_userns_clone=1
+
+# Сделать постоянным после перезагрузки
+echo "kernel.unprivileged_userns_clone=1" | sudo tee -a /etc/sysctl.conf
+```
+
+> **Примечание:** если bubblewrap недоступен или user namespaces отключены, код автоматически запускается без изоляции.
 
 ## Установка как Python-библиотеки
 

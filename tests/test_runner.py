@@ -5,6 +5,20 @@ import subprocess
 import os
 from unittest.mock import patch, MagicMock
 
+def test_bwrap_isolation_must_be_active():
+    """
+    Строгая проверка: bwrap должен быть доступен и user namespaces включены.
+    Этот тест должен проходить в CI и на сервере Moodle, чтобы гарантировать,
+    что изоляция реально активна, а не молча уходит в fallback.
+    """
+    assert CProgramRunner._bwrap_userns_available(), (
+        "bwrap изоляция недоступна. Проверьте: "
+        "1) установлен ли bubblewrap (`which bwrap`); "
+        "2) включены ли user namespaces "
+        "(`cat /proc/sys/kernel/unprivileged_userns_clone` должно быть 1)."
+    )
+
+
 def test_compilation_flags_support():
     """
     Возможность настройки флагов компиляции
