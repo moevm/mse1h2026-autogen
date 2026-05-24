@@ -168,6 +168,10 @@ class CProgramRunner:
                     'bwrap',
                     '--ro-bind', '/usr', '/usr',
                     '--ro-bind', '/lib', '/lib',
+                    ]
+                    if os.path.exists('/lib64'):
+                        cmd += ['--ro-bind', '/lib64', '/lib64']
+                    cmd += [
                     '--ro-bind', '/etc', '/etc',
                     '--tmpfs', '/tmp',
                     '--proc', '/proc',
@@ -180,9 +184,7 @@ class CProgramRunner:
                     '--bind', self.tmp_dir.name, '/sandbox',
                     f'/sandbox/{bin_name}'
                     ]
-                    if os.path.exists('/lib64'):
-                        cmd[3:3] = ['--ro-bind', '/lib64', '/lib64']
-                    
+
                     isolation_active = True
                 else:
                     pass
