@@ -241,6 +241,10 @@ print(question.getTemplateParameters())
 
         rel_path = file.relative_to(SOURCE_PATH)
         sub_path = rel_path.parent.relative_to('prog_questions')
+        # Осенние задачи (лежащие в корне prog_questions) выносим в отдельную папку autumn/
+        # для симметрии с spring/
+        if str(sub_path) == ".":
+            sub_path = Path("autumn")
 
         if BUILD_DEBUG:
             has_simple_variant = question_arguments is not None and any(
@@ -269,8 +273,7 @@ print(question.getTemplateParameters())
                 debug_xml.xpath('//templateparams')[0].text = xml.CDATA(debug_templateparams)
                 debug_xml.xpath('//template')[0].text = xml.CDATA(debug_code)
 
-                folder_context = "autumn" if str(sub_path) == "." else str(sub_path)
-                debug_moodle_name = f'[DEBUG] {folder_context} - {question_name}{name_suffix}'
+                debug_moodle_name = f'[DEBUG] {sub_path} - {question_name}{name_suffix}'
                 debug_xml.xpath('//question/name/text')[0].text = xml.CDATA(debug_moodle_name)
 
                 debug_output_dir = OUTPUT_DEBUG_PATH / sub_path

@@ -15,6 +15,17 @@ jobs:
     steps:
       - name: Checkout repository code
         uses: actions/checkout@v4
+        
+      - name: Enable unprivileged user namespaces
+        run: |
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          # Ubuntu 24.04 AppArmor блокирует unprivileged user namespaces по умолчанию
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          
+      - name: Install system dependencies (gcc, bubblewrap)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc bubblewrap libc6-dev
 
       - name: Install python modules
         run: pip install -r requirements.txt

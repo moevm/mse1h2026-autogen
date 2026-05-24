@@ -1,7 +1,8 @@
 import subprocess
 import os
 import tempfile
-
+import shutil
+from typing import List, Optional, Union
 
 class CompilationError(Exception):
     """Ошибка компиляции C-кода"""
@@ -70,14 +71,25 @@ class ExitCodeHandler:
 class CProgramRunner:
     """Класс для компиляции и выполнения C-кода"""
 
-    def __init__(self, c_code: str):
+    def __init__(self, c_code: str, use_isolation: bool = True, compile_flags: Optional[Union[str, List[str]]] = None):
         """
         Инициализация с компиляцией переданного C-кода
         :param c_code: Исходный код на C в виде строки
         """
         self.c_code = c_code
-        self.exit_code_handler = ExitCodeHandler()
+        self.use_isolation = use_isolation
 
+        if compile_flags is None:
+            self.compile_flags = []
+        elif isinstance(compile_flags, str):
+            self.compile_flags = [f for f in compile_flags.split() if f]
+        elif isinstance(compile_flags, (list, tuple)):
+            self.compile_flags = list(compile_flags)
+        else:
+            raise TypeError(f"compile_flags должен быть str/list/tuple, получено: {type(compile_flags)}")
+
+        self.exit_code_handler = ExitCodeHandler()
+        
         try:
             self.tmp_dir = tempfile.TemporaryDirectory(dir='.')
         except Exception as e:
@@ -98,8 +110,9 @@ class CProgramRunner:
                 f.write(self.c_code)
 
             exec_path = os.path.join(self.tmp_dir.name, 'program')
+            compile_cmd = ['gcc', src_path, '-o', exec_path] + self.compile_flags
             compile_result = subprocess.run(
-                ['gcc', src_path, '-o', exec_path],
+                compile_cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
@@ -108,12 +121,32 @@ class CProgramRunner:
                 error_msg = compile_result.stderr.decode('utf-8', errors='replace')
                 raise CompilationError(error_msg)
 
+            os.chmod(exec_path, 0o755)
             return exec_path
 
         except CompilationError:
             raise
         except Exception as e:
             raise InternalError(f"Внутренняя ошибка при компиляции: {e}")
+
+    @staticmethod
+    def _bwrap_userns_available() -> bool:
+        try:
+            cmd = ['bwrap',
+                   '--ro-bind', '/usr', '/usr',
+                   '--ro-bind', '/lib', '/lib']
+            if os.path.exists('/lib64'):
+                cmd += ['--ro-bind', '/lib64', '/lib64']
+            cmd += ['--proc', '/proc',
+                    '--dev', '/dev',
+                    '--unshare-pid', '/usr/bin/true']
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
 
     def run(self, input_data: str = "", timeout: int = 3) -> str:
         """
@@ -126,8 +159,41 @@ class CProgramRunner:
             raise EnvironmentError("Исполняемый файл не скомпилирован или отсутствует")
 
         try:
+            isolation_active = False
+            if self.use_isolation:
+                if shutil.which('bwrap') and self._bwrap_userns_available():
+                    bin_name = os.path.basename(self.executable_path)
+
+                    cmd = [
+                    'bwrap',
+                    '--ro-bind', '/usr', '/usr',
+                    '--ro-bind', '/lib', '/lib',
+                    ]
+                    if os.path.exists('/lib64'):
+                        cmd += ['--ro-bind', '/lib64', '/lib64']
+                    cmd += [
+                    '--ro-bind', '/etc', '/etc',
+                    '--tmpfs', '/tmp',
+                    '--proc', '/proc',
+                    '--dev', '/dev',
+                    '--unshare-pid',
+                    '--unshare-net',
+                    '--unshare-ipc',
+                    '--unshare-uts',
+                    '--die-with-parent',
+                    '--bind', self.tmp_dir.name, '/sandbox',
+                    f'/sandbox/{bin_name}'
+                    ]
+
+                    isolation_active = True
+                else:
+                    pass
+
+            if not isolation_active:
+                cmd = [self.executable_path]
+
             run_result = subprocess.run(
-                [self.executable_path],
+                cmd,
                 input=input_data.encode('utf-8'),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -135,8 +201,10 @@ class CProgramRunner:
             )
 
             exit_message = self.exit_code_handler.get_exit_message(run_result.returncode)
+            
             if run_result.returncode != 0:
-                raise ExecutionError(exit_message, run_result.returncode)
+                stderr_text = run_result.stderr.decode('utf-8', errors='replace').strip()
+                raise ExecutionError(f"{exit_message}\n{stderr_text}", run_result.returncode)
 
             try:
                 output = run_result.stdout.decode('utf-8')
