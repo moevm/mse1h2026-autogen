@@ -134,12 +134,12 @@ class CProgramRunner:
         try:
             cmd = ['bwrap',
                    '--ro-bind', '/usr', '/usr',
-                   '--ro-bind', '/lib', '/lib',
-                   '--proc', '/proc',
-                   '--dev', '/dev',
-                   '--unshare-pid', '/usr/bin/true']
+                   '--ro-bind', '/lib', '/lib']
             if os.path.exists('/lib64'):
-                cmd[5:5] = ['--ro-bind', '/lib64', '/lib64']
+                cmd += ['--ro-bind', '/lib64', '/lib64']
+            cmd += ['--proc', '/proc',
+                    '--dev', '/dev',
+                    '--unshare-pid', '/usr/bin/true']
             result = subprocess.run(
                 cmd,
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
