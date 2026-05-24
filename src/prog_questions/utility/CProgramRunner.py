@@ -134,7 +134,7 @@ class CProgramRunner:
         try:
             result = subprocess.run(
                 ['bwrap', '--ro-bind', '/usr', '/usr', '--proc', '/proc',
-                 '--dev', '/dev', '--unshare-pid', 'true'],
+                 '--dev', '/dev', '--unshare-pid', '/usr/bin/true'],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
             )
             return result.returncode == 0
