@@ -132,9 +132,16 @@ class CProgramRunner:
     @staticmethod
     def _bwrap_userns_available() -> bool:
         try:
+            cmd = ['bwrap',
+                   '--ro-bind', '/usr', '/usr',
+                   '--ro-bind', '/lib', '/lib',
+                   '--proc', '/proc',
+                   '--dev', '/dev',
+                   '--unshare-pid', '/usr/bin/true']
+            if os.path.exists('/lib64'):
+                cmd[5:5] = ['--ro-bind', '/lib64', '/lib64']
             result = subprocess.run(
-                ['bwrap', '--ro-bind', '/usr', '/usr', '--proc', '/proc',
-                 '--dev', '/dev', '--unshare-pid', '/usr/bin/true'],
+                cmd,
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
             )
             return result.returncode == 0
