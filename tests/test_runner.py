@@ -5,17 +5,50 @@ import subprocess
 import os
 from unittest.mock import patch, MagicMock
 
-def test_bwrap_isolation_must_be_active():
+def test_bwrap_isolation_must_be_active(capsys):
     """
     Строгая проверка: bwrap должен быть доступен и user namespaces включены.
-    Этот тест должен проходить в CI и на сервере Moodle, чтобы гарантировать,
-    что изоляция реально активна, а не молча уходит в fallback.
+    Печатает диагностику в stdout, чтобы было видно в CI логах что именно не работает.
     """
+    import shutil
+
+    diagnostics = []
+    diagnostics.append(f"which bwrap: {shutil.which('bwrap')}")
+
+    try:
+        with open('/proc/sys/kernel/unprivileged_userns_clone') as f:
+            diagnostics.append(f"unprivileged_userns_clone: {f.read().strip()}")
+    except Exception as e:
+        diagnostics.append(f"unprivileged_userns_clone: read error {e}")
+
+    diagnostics.append(f"/lib exists: {os.path.exists('/lib')}")
+    diagnostics.append(f"/lib64 exists: {os.path.exists('/lib64')}")
+    diagnostics.append(f"/usr/bin/true exists: {os.path.exists('/usr/bin/true')}")
+
+    cmd = ['bwrap',
+           '--ro-bind', '/usr', '/usr',
+           '--ro-bind', '/lib', '/lib',
+           '--proc', '/proc',
+           '--dev', '/dev',
+           '--unshare-pid', '/usr/bin/true']
+    if os.path.exists('/lib64'):
+        cmd[5:5] = ['--ro-bind', '/lib64', '/lib64']
+
+    diagnostics.append(f"cmd: {' '.join(cmd)}")
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=5)
+        diagnostics.append(f"returncode: {result.returncode}")
+        diagnostics.append(f"stdout: {result.stdout.decode(errors='replace')}")
+        diagnostics.append(f"stderr: {result.stderr.decode(errors='replace')}")
+    except Exception as e:
+        diagnostics.append(f"exception: {e}")
+
+    diag_text = "\n".join(diagnostics)
+    print(f"\n=== BWRAP DIAGNOSTICS ===\n{diag_text}\n=========================")
+
     assert CProgramRunner._bwrap_userns_available(), (
-        "bwrap изоляция недоступна. Проверьте: "
-        "1) установлен ли bubblewrap (`which bwrap`); "
-        "2) включены ли user namespaces "
-        "(`cat /proc/sys/kernel/unprivileged_userns_clone` должно быть 1)."
+        f"bwrap изоляция недоступна.\nДиагностика:\n{diag_text}"
     )
 
 
