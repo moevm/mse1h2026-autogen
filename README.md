@@ -21,8 +21,12 @@ sudo apt-get install -y gcc bubblewrap
 # Включить (требует root)
 sudo sysctl -w kernel.unprivileged_userns_clone=1
 
+# На Ubuntu 24.04+ дополнительно отключить AppArmor-ограничение
+sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
 # Сделать постоянным после перезагрузки
 echo "kernel.unprivileged_userns_clone=1" | sudo tee -a /etc/sysctl.conf
+echo "kernel.apparmor_restrict_unprivileged_userns=0" | sudo tee -a /etc/sysctl.conf
 ```
 
 > **Примечание:** если bubblewrap недоступен или user namespaces отключены, код автоматически запускается без изоляции.
