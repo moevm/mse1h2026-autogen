@@ -1,6 +1,7 @@
 from prog_questions import QuestionN3, Result, utility
 from utility import moodleInit
 import pytest
+import random
 
 class TestQuestionN3:
     question1 = moodleInit(QuestionN3, seed=123)
@@ -225,3 +226,68 @@ class TestQuestionN3:
                 return 0;
             }
         ''') != Result.Ok()
+        
+    def test_generate_number_ranges_by_type(self):
+        q = QuestionN3(seed=100)
+        samples = 200
+
+        q.dataType = 'char'
+        for _ in range(samples):
+            value = q.generateNumber()
+            assert -128 <= value <= 127
+
+        q.dataType = 'unsigned char'
+        for _ in range(samples):
+            value = q.generateNumber()
+            assert 0 <= value <= 255
+
+        q.dataType = 'int'
+        for _ in range(samples):
+            value = q.generateNumber()
+            assert -1_000_000 <= value <= 1_000_000
+
+        q.dataType = 'unsigned int'
+        for _ in range(samples):
+            value = q.generateNumber()
+            assert 0 <= value <= 1_000_000
+
+        q.dataType = '_Bool'
+        for _ in range(samples):
+            value = q.generateNumber()
+            assert value in [0, 1]
+
+        q.dataType = 'double'
+        for _ in range(samples):
+            value = q.generateNumber()
+            assert isinstance(value, float)
+            assert -1e6 <= value <= 1e6
+
+    def test_generate_test_bool_output_is_strict_binary(self):
+        q = QuestionN3(seed=300)
+        q.operationType = 'sum'
+        q.elementType = 'all'
+        q.dataType = '_Bool'
+
+        for seed in [10, 20, 30, 40, 50]:
+            state = random.getstate()
+            random.seed(seed)
+            _, expected = q.generateTest(min_rand_len=3)
+            random.setstate(state)
+            assert expected in ['0', '1']
+
+    def test_generate_test_double_output_has_six_digits(self):
+        q = QuestionN3(seed=400)
+        q.operationType = 'average'
+        q.elementType = 'all'
+        q.dataType = 'double'
+
+        state = random.getstate()
+        random.seed(123)
+        _, expected = q.generateTest(min_rand_len=4)
+        random.setstate(state)
+
+        assert '.' in expected
+        whole, fraction = expected.split('.', 1)
+        assert whole.lstrip('-').isdigit()
+        assert len(fraction) == 6
+        assert fraction.isdigit()
