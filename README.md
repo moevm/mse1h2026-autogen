@@ -49,6 +49,11 @@ pip install "git+https://github.com/moevm/mse1h2026-autogen.git#egg=prog_questio
 ```
 
 ### Локальная установка
+Клонируйте репозиторий и перейдите в папку проекта: 
+```
+git clone git@github.com:moevm/mse1h2026-autogen.git
+cd mse1h2026-autogen
+```
 После клонирования репозитория введите следующие команды:
 - Для генерации вопросов:
 ```
