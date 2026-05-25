@@ -226,7 +226,6 @@ class TestQuestionN3:
                 return 0;
             }
         ''') != Result.Ok()
-        
     def test_generate_number_ranges_by_type(self):
         q = QuestionN3(seed=100)
         samples = 200
