@@ -261,7 +261,7 @@ class TestQuestionN3:
             assert isinstance(value, float)
             assert -1e6 <= value <= 1e6
 
-    def test_generate_test_bool_output_is_strict_binary(self):
+    def test_generate_test_bool_sum_counts_ones(self):
         q = QuestionN3(seed=300)
         q.operationType = 'sum'
         q.elementType = 'all'
@@ -269,10 +269,21 @@ class TestQuestionN3:
 
         for seed in [10, 20, 30, 40, 50]:
             state = random.getstate()
-            random.seed(seed)
-            _, expected = q.generateTest(min_rand_len=3)
-            random.setstate(state)
-            assert expected in ['0', '1']
+            try:
+                random.seed(seed)
+                program_input, expected = q.generateTest(
+                    min_rand_len=3
+                )
+            finally:
+                random.setstate(state)
+
+            values = list(map(int, program_input.split()))
+            n = values[0]
+            numbers = values[1:]
+
+            assert len(numbers) == n
+            assert all(x in (0, 1) for x in numbers)
+            assert expected == str(sum(numbers))
 
     def test_generate_test_double_output_has_six_digits(self):
         q = QuestionN3(seed=400)

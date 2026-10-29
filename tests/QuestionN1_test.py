@@ -126,3 +126,39 @@ class TestQuestionN1:
                 return 0;
             }
         ''') != Result.Ok()
+
+
+def test_hex_noise_bad_tokens_have_no_hex_digits():
+    from prog_questions.QuestionN1 import BAD_NUMBERS
+
+    hex_digits = set('0123456789abcdefABCDEF')
+    assert all(
+        not (set(token) & hex_digits)
+        for token in BAD_NUMBERS
+    )
+
+
+def test_hex_noise_error_position():
+    from prog_questions import QuestionN1
+    import random
+
+    q = QuestionN1(seed=20261030)
+    q.inputBase = 16
+    q.inputFormat = 'noise'
+    q.inputSize = 3
+
+    hex_digits = set('0123456789abcdefABCDEF')
+
+    for seed in range(500):
+        random.seed(seed)
+        text, expected = q.generateTest(is_good=False)
+
+        count = 0
+        for token in text.split():
+            if not (set(token) & hex_digits):
+                break
+            count += 1
+
+        assert expected == f'error: {count}', (
+            seed, text, expected, count
+        )
