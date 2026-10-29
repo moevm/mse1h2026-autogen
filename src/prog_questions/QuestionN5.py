@@ -70,6 +70,15 @@ class QuestionN5(QuestionBase):
             # Для палиндромов (если используется эта метрика), можно было бы дополнительно генерировать,
             # но для простоты оставим обычные предложения
 
+        if self.metricBase == 'punctuation_count':
+            words = sentence.split()
+            budget = max(0, self.maxSentenceSize - len(sentence))
+            available = max(0, len(words) - 1)
+            count = random.randint(0, min(4, available, budget))
+            for i in random.sample(range(available), count):
+                words[i] += random.choice(',!?')
+            sentence = ' '.join(words)
+
         sentence = re.sub(r'[^a-zA-Z0-9 .,!?]', '', sentence)
         return sentence
 
@@ -89,7 +98,7 @@ class QuestionN5(QuestionBase):
 
         def count_punctuation(s):
             # Считаем знаки препинания по строке, используя простой шаблон
-            return sum(ch in '.,;:!?-—()[]{}"\'' for ch in s)
+            return sum(ch in '.,!?' for ch in s)
 
         def count_spaces(s):
             return s.count(' ')
@@ -165,6 +174,25 @@ class QuestionN5(QuestionBase):
 
         return programInput, expectedOutput
 
+    def acceptableOutputs(self, programInput: str) -> set[str]:
+        lines = programInput.splitlines()
+        quantity = int(lines[0])
+        sentences = lines[1:quantity + 1]
+        assert len(sentences) == quantity
+
+        metrics = [self.getMetric(s) for s in sentences]
+        best = (
+            max(metrics)
+            if self.metricDirection == 'max'
+            else min(metrics)
+        )
+
+        return {
+            f'{best}: {sentence}'
+            for sentence, metric in zip(sentences, metrics)
+            if metric == best
+        }
+
     @property
     def questionText(self) -> str:
         """
@@ -197,6 +225,8 @@ class QuestionN5(QuestionBase):
                 Предложение состоит из слов (слово == последовательность любых символов, <b>кроме символов пробела и точки</b>),
                 разделённых ровно одним символом пробела, и заканчивается символом точки.<br>
             '''
+        elif self.metricBase == 'punctuation_count':
+            extraDescription = 'Знаки препинания: точка (.), запятая (,), ! и ?.<br>'
         elif self.metricBase == 'special_chars':
             extraDescription = '''
                 Спецсимволы — это любые символы, не являющиеся буквами, цифрами или пробелами.<br>
@@ -222,11 +252,11 @@ class QuestionN5(QuestionBase):
                 </thead>
                 <tbody>
                     <tr class="r0 lastrow">
-                        <td class="cell  c1" style=""><pre class="tablecell">{tests[0][0].replace(chr(10), '</p><p>')}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{tests[0][0]}</pre></td>
                         <td class="cell  c1" style=""><pre class="tablecell">{tests[0][1]}</pre></td>
                     </tr>
                     <tr class="r0 lastrow">
-                        <td class="cell  c1" style=""><pre class="tablecell">{tests[1][0].replace(chr(10), '</p><p>')}</pre></td>
+                        <td class="cell  c1" style=""><pre class="tablecell">{tests[1][0]}</pre></td>
                         <td class="cell  c1" style=""><pre class="tablecell">{tests[1][1]}</pre></td>
                     </tr>
                 </tbody>
@@ -240,6 +270,7 @@ class QuestionN5(QuestionBase):
             <ol>
                 <li>Считывает <b>N строк</b> из входного потока</li>
                 <li>Находит {metricDescription}</li>
+                <li>При равенстве лучших значений можно вывести любую подходящую строку.</li>
                 <li>Выводит результат в формате: <b>&lt;значение&gt;: строка</b></li>
             </ol>
             <b>Нельзя использовать библиотеку <code>&lt;string.h&gt;</code></b><br><br>
@@ -291,7 +322,7 @@ class QuestionN5(QuestionBase):
             programInput, expectedOutput = self.generateTest()
             try:
                 result = program.run(programInput)
-                if result != expectedOutput:
+                if result not in self.acceptableOutputs(programInput):
                     return Result.Fail(programInput, expectedOutput, result)
             except ExecutionError as e:
                 return Result.Fail(programInput, expectedOutput, str(e))
@@ -303,7 +334,7 @@ class QuestionN5(QuestionBase):
             programInput, expectedOutput = self.generateTest()
             try:
                 result = program.run(programInput)
-                if result != expectedOutput:
+                if result not in self.acceptableOutputs(programInput):
                     return Result.Fail(programInput, expectedOutput, result)
             except ExecutionError as e:
                 return Result.Fail(programInput, expectedOutput, str(e))

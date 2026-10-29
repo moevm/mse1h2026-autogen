@@ -70,6 +70,16 @@ class QuestionN4(QuestionBase):
         Текст задания с пояснениями.
         """
         dims_str = ''.join([f'[{x}]' for x in self.arr_dims])
+        example_dims = [4, 5, 6]
+        example_pairs = [
+            ([1, 2, 3], [2, 2, 3]),
+            ([0, 1, 3], [0, 3, 3]),
+        ]
+        example_answers = [
+            self.convert_index(b, example_dims) -
+            self.convert_index(a, example_dims)
+            for a, b in example_pairs
+        ]
 
         random.seed(self.seed)
         programInput, expectedOutput = self.generateTest()
@@ -78,16 +88,15 @@ class QuestionN4(QuestionBase):
         Вам дан многомерный массив с размерами {dims_str}.<br>
         Для каждого вопроса вычислите разницу плоских (линейных) индексов двух элементов массива.<br>
         Введите ответы на каждый вопрос с новой строки.<br><br>
-        <b>Пример:</b><br>
-        <pre>
-        Размеры массива: {dims_str}
-        Вопрос 1: arr[1][2][3] и arr[2][3][4]
-        Вопрос 2: arr[0][0][0] и arr[1][1][1]
+        <b>Пример для отдельного массива [4][5][6]:</b><br>
+        <pre>Размеры массива: [4][5][6]
+Вопрос 1: arr[1][2][3] и arr[2][2][3]
+Вопрос 2: arr[0][1][3] и arr[0][3][3]
 
-        Вывод:
-        45
-        20
-        </pre>
+Вывод:
+{example_answers[0]}
+{example_answers[1]}</pre>
+        Разность линейных индексов измеряется в элементах, а не байтах.<br><br>
         
         <b>Задание:</b><br>
         <pre>{programInput}</pre>

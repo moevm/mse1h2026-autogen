@@ -159,6 +159,35 @@ class QuestionN2(QuestionBase):
 
         return inputString, self.applyOperation(inputString)
 
+    def generateExampleTests(self):
+        cases = {
+            'remove_digits': ('Ab12c3', 'A0B99x'),
+            'remove_upper': ('aBCdE3f', 'ZaBcD8'),
+            'remove_lower': ('aBCdE3f', 'ZaBcD8'),
+            'keep_digits': ('Ab12c3', 'A0B99x'),
+            'to_upper': ('aBcZ7', 'xyZa2'),
+            'to_lower': ('aBcZ7', 'xyZa2'),
+            'replace_digits_star': ('A12b3', 'a4B50'),
+            'remove_non_alpha': ('Ab12_c3', 'x-7Z!'),
+            'remove_non_alnum': ('a-B!12 Z', 'Hi_7?OK 3'),
+            'replace_vowels_dash': ('aEbiOuZ', 'Hello WORLD'),
+            'double_letters': ('Ab9z', 'xyZ2'),
+            'reverse': ('Ab3!z', 'aB12c'),
+            'remove_vowels': ('aEbiOuZ', 'Hello WORLD'),
+            'remove_consonants': ('aBciD', 'HeLLo XYZ'),
+            'replace_spaces_underscore': ('a b  c', 'A 9 z'),
+            'count_digits': ('AB12c3', 'a0B987'),
+            'count_upper': ('aBCdE3f', 'XYz1q'),
+            'count_lower': ('aBCdE3f', 'XYz1q'),
+            'sort_chars': ('zB4aA1', 'cBaA9'),
+            'unique_chars': ('aA11BbAa', 'xxyYx22'),
+            'caesar_cipher': ('zZaY9!', 'AbZz2'),
+        }
+        return tuple(
+            (s, self.applyOperation(s))
+            for s in cases[self.operation]
+        )
+
     # Текст задачи с описанием операции и примерами
     @property
     def questionText(self) -> str:
@@ -183,19 +212,10 @@ class QuestionN2(QuestionBase):
             'count_lower': 'выводит <b>количество символов нижнего регистра</b>',
             'sort_chars': 'сортирует <b>все символы строки по возрастанию</b>',
             'unique_chars': 'удаляет <b>повторяющиеся символы</b>, оставляя только первые вхождения',
-            'caesar_cipher': 'шифрует строку <b>шифром Цезаря</b>'
+            'caesar_cipher': f'шифрует строку <b>шифром Цезаря</b> со сдвигом на <b>{random.Random(self.seed + 1000).randint(1, 5)}</b> позиций вперёд по латинскому алфавиту (с переходом z в a и Z в A)'
         }
 
-        # Hack to generate not long strings in example
-        save_max_size = self.maxInputSize
-        self.maxInputSize = 20
-        # Генерируем тесты с использованием фиксированных seed для повторяемости
-        random.seed(self.seed)
-        goodTest = self.generateGoodTest()
-        random.seed(self.seed + 1)
-        badTest = self.generateBadTest()
-
-        self.maxInputSize = save_max_size
+        goodTest, badTest = self.generateExampleTests()
 
         # Формируем HTML-таблицу с примерами входных данных и результатов
         exampleTable = f'''
@@ -271,7 +291,7 @@ class QuestionN2(QuestionBase):
             programInput, expectedOutput = self.generateGoodTest() if random.random() < 0.7 else self.generateBadTest()
             try:
                 result = program.run(programInput + '\n')
-                if result.strip() != expectedOutput.strip():
+                if result != expectedOutput:
                     return Result.Fail(programInput, expectedOutput, result)
             except ExecutionError as e:
                 return Result.Fail(programInput, expectedOutput, str(e))

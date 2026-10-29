@@ -211,7 +211,7 @@ class CProgramRunner:
             except UnicodeDecodeError as e:
                 raise ExecutionError(f"Ошибка декодирования вывода ({e})", run_result.returncode)
 
-            return output.strip()
+            return output.rstrip('\r\n')
 
         except subprocess.TimeoutExpired:
             raise ExecutionError(f"Превышено время выполнения ({timeout} с)", 1)

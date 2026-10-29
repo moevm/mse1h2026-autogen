@@ -62,6 +62,8 @@ class QuestionN3(QuestionBase):
                 max_shift = 30
             else:
                 max_shift = 31
+            if self.operationType == 'shift_left':
+                max_shift = min(max_shift, 5)
             self.shiftValue = random.randint(1, max_shift)
 
     def generateNumber(self) -> float | int:
@@ -69,6 +71,9 @@ class QuestionN3(QuestionBase):
         Генерирует случайное число в зависимости от выбранного типа данных.
         Для целочисленных типов возвращает int, для float-типов — округленное float.
         """
+        if self.operationType == 'shift_left':
+            return random.randint(0, 1000)
+
         match self.dataType:
             case 'char':
                 return random.randint(-128, 127)
@@ -169,7 +174,7 @@ class QuestionN3(QuestionBase):
         if self.dataType in self.floatTypes:
             expectedOutput = f'{result:.6f}'  # 6 знаков после запятой для float
         elif self.dataType == '_Bool':
-            expectedOutput = str(int(bool(result)))  # 0 или 1
+            expectedOutput = str(int(result))
         else:
             expectedOutput = str(int(result))  # целочисленные типы — целое число
 
@@ -206,10 +211,14 @@ class QuestionN3(QuestionBase):
         }.get(self.elementType, self.elementType)
 
         saved_max_len = self.maxLength
-        self.maxLength = 4
-        # Генерируем пример входа и выхода
-        exampleInput, exampleOutput = self.generateTest(min_rand_len=3)
-        self.maxLength = saved_max_len
+        saved_random_state = random.getstate()
+        try:
+            random.seed(self.seed)
+            self.maxLength = 12
+            exampleInput, exampleOutput = self.generateTest(min_rand_len=12)
+        finally:
+            self.maxLength = saved_max_len
+            random.setstate(saved_random_state)
 
         # Формируем таблицу с примером
         exampleTable = f'''
@@ -239,6 +248,13 @@ class QuestionN3(QuestionBase):
             num_type = "целых чисел"
 
         special_notes = []
+        if self.dataType == '_Bool' and self.operationType == 'sum':
+            special_notes.append('<li>Сумма значений _Bool (0 и 1) выводится как целое число.</li>')
+        if self.operationType == 'average':
+            if self.dataType == 'double':
+                special_notes.append('<li>Выведите шесть цифр после десятичной точки.</li>')
+            else:
+                special_notes.append('<li>Дробная часть среднего отбрасывается в сторону нуля.</li>')
         if self.operationType == 'bit_and':
             special_notes.append(f'''<li>Для пустого массива операция AND возвращает 0</li>''')
         if self.operationType in ['shift_left', 'shift_right']:
@@ -258,7 +274,7 @@ class QuestionN3(QuestionBase):
             '''
         # Возвращаем финальный текст задачи с подсказками
         return f'''
-            Напишите программу на C, которая получает число <b>N</b> (не более {self.maxLength}), затем <b>N</b> {num_type}</code>.<br>
+            Напишите программу на C, которая получает число <b>N</b> (не более {self.maxLength}), затем <b>N</b> {num_type}.<br>
             Необходимо сохранить числа в массив и вычислить {opText} элементов с {indexText} индексами.<br>{accuracy}<br>
             {special_cases}
             <b>Пример</b>:<br><br>
@@ -301,15 +317,15 @@ class QuestionN3(QuestionBase):
                         #result_val = float(result)
                         #expected_val = float(expectedOutput)
                         #if abs(result_val - expected_val) > 0.01:
-                        if result.strip() != expectedOutput.strip():
+                        if result != expectedOutput:
                             return Result.Fail(programInput, expectedOutput, result)
                     except ValueError:
                         return Result.Fail(programInput, expectedOutput, result)
                 elif self.dataType == '_Bool':
-                    if result.strip() not in ['0', '1'] or result.strip() != expectedOutput:
+                    if result != expectedOutput:
                         return Result.Fail(programInput, expectedOutput, result)
                 else:
-                    if result.strip() != expectedOutput.strip():
+                    if result != expectedOutput:
                         return Result.Fail(programInput, expectedOutput, result)
             except ExecutionError as e:
                 return Result.Fail(programInput, expectedOutput, str(e))

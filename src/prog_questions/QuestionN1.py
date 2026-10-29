@@ -5,7 +5,7 @@ import time
 
 BAD_NUMBERS = [
     'qww',
-    'wolf',
+    'wolk',
     'owl',
     'xor'
 ]
@@ -111,6 +111,13 @@ class QuestionN1(QuestionBase):
         while True:
             if self.operation == 'pow':
                 numbers = [random.randint(1, 5)] + [random.randint(1, 2) for _ in range(count - 1)] if count > 0 else []
+            elif self.operation == 'div':
+                divisors = [random.randint(2, 9) for _ in range(count - 1)]
+                quotient = random.randint(2, 1000)
+                dividend = quotient
+                for divisor in divisors:
+                    dividend *= divisor
+                numbers = [dividend, *divisors] if count else []
             elif self.operation == 'mul':
                 numbers = [random.randint(1, 15) for _ in range(count)]
             elif self.operation == 'sub':
@@ -149,6 +156,27 @@ class QuestionN1(QuestionBase):
             expectedOutput = f'error: {i}'
             return programInput, expectedOutput
 
+    def generateExampleTest(self):
+        choices = {
+            'sum': [17, 24, 31, 38, 45],
+            'sub': [200, 17, 23, 11, 9],
+            'mul': [3, 5, 2, 4, 3],
+            'div': [960, 2, 3, 4, 5],
+            'mod': [287, 100, 40, 4, 2],
+            'max': [35, 67, 8, 42, 28],
+            'min': [35, 67, 8, 42, 28],
+            'avg': [17, 22, 27, 35, 41],
+            'pow': [2, 2, 2, 2, 2],
+        }
+        numbers = choices[self.operation][:self.inputSize]
+        if self.operation == 'avg' and sum(numbers) % len(numbers) == 0:
+            numbers[-1] += 1
+        return (
+            self.formatInput([self.toInput(n) for n in numbers]),
+            self.toOutput(self.operate(numbers)),
+            numbers,
+        )
+
     @property
     def questionText(self) -> str:
         baseDict = {2: 'двоичной', 8: 'восьмеричной', 10: 'десятичной', 16: 'шестнадцатеричной'}
@@ -169,7 +197,10 @@ class QuestionN1(QuestionBase):
             'brackets': f'в круглых скобках через символ <b>{self.delimiter}</b>',
             'delimiter': f'разделены символом <b>{self.delimiter}</b>',
             'squares': f'в квадратных скобках через символ <b>{self.delimiter}</b>',
-            'noise': f'вперемешку с посторонними символами, разделены пробелами'
+            'noise': ('разделены пробелами; внутри каждого фрагмента '
+                      'пропустите все символы, не являющиеся цифрами указанной системы счисления, '
+                      'и прочитайте оставшиеся цифры как одно число; '
+                      'если цифр нет, чтение считается неуспешным')
         }[self.inputFormat]
 
         outputFormatDescription = {
@@ -180,7 +211,7 @@ class QuestionN1(QuestionBase):
         }[self.outputFormat]
 
         random.seed(self.seed)
-        goodTest = self.generateTest()
+        goodTest = self.generateExampleTest()
         random.seed(self.seed + 1)
         badTest = self.generateTest(is_good=False)
 
@@ -235,7 +266,7 @@ class QuestionN1(QuestionBase):
         for _ in range(static_tests):
             programInput, expectedOutput, _ = self.generateTest()
             try:
-                result = program.run(programInput).strip()
+                result = program.run(programInput)
                 if result != expectedOutput:
                     return Result.Fail(programInput, expectedOutput, result)
             except Exception as e:
@@ -245,7 +276,7 @@ class QuestionN1(QuestionBase):
         for _ in range(static_tests):
             programInput, expectedOutput = self.generateTest(is_good=False)
             try:
-                result = program.run(programInput).strip()
+                result = program.run(programInput)
                 if result != expectedOutput:
                     return Result.Fail(programInput, expectedOutput, result)
             except Exception as e:
@@ -258,7 +289,7 @@ class QuestionN1(QuestionBase):
             else:
                 programInput, expectedOutput = self.generateTest(is_good=False, random_bad_numbers=True)
             try:
-                result = program.run(programInput).strip()
+                result = program.run(programInput)
                 if result != expectedOutput:
                     return Result.Fail(programInput, expectedOutput, result)
             except Exception as e:
